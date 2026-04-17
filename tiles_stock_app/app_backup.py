@@ -1,0 +1,867 @@
+from flask import (
+    Flask, render_template, request, redirect,
+    session, flash, make_response, url_for, send_from_directory
+)
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from datetime import datetime
+from sqlalchemy import func
+from functools import wraps
+import io
+import os
+import traceback
+
+# ================= APP SETUP =================
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super-secret-key')
+
+# ================= UPLOAD CONFIG =================
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+TILE_CATEGORIES = [
+    "Bathroom Tiles",
+    "Room Tiles",
+    "Parking Tiles",
+    "Elevation Tiles",
+    "Kitchen Tiles"
+]
+
+SANITARY_CATEGORIES = [
+    "Commode (Western)",
+    "Indian Seat",
+    "Sink / Wash Basin",
+    "Urinal",
+    "Bathroom Accessories"
+]
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# ================= DATABASE CONFIG =================
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or "sqlite:///database.db"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# ================= MODELS =================
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(150))
+    password = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(10), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Tile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    brand = db.Column(db.String(100), nullable=False)
+    category = db.Column(db.String(50), nullable=True)
+    size = db.Column(db.String(50), nullable=False)
+    buy_price = db.Column(db.Float)
+    price = db.Column(db.Float, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    image_filename = db.Column(db.String(200), nullable=True)
+
+class SanitaryProduct(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    category = db.Column(db.String(100), nullable=False)
+    brand = db.Column(db.String(100), nullable=True)
+    size = db.Column(db.String(50), nullable=True)
+    price = db.Column(db.Float, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    image_filename = db.Column(db.String(200), nullable=True)
+
+
+class Bill(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_name = db.Column(db.String(150))
+    customer_mobile = db.Column(db.String(15))
+    total = db.Column(db.Float, nullable=False)
+    gst = db.Column(db.Float, default=0)
+    discount = db.Column(db.Float, default=0)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    items = db.relationship('BillItem', backref='bill_ref', lazy=True, cascade="all, delete-orphan")
+
+
+class BillItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bill_id = db.Column(db.Integer, db.ForeignKey('bill.id'))
+    tile_name = db.Column(db.String(150))
+    size = db.Column(db.String(50))
+    price = db.Column(db.Float)
+    quantity = db.Column(db.Integer)
+    total = db.Column(db.Float)
+
+
+class OnlineOrder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_name = db.Column(db.String(150), nullable=False)
+    customer_mobile = db.Column(db.String(15), nullable=False)
+    customer_email = db.Column(db.String(150))
+    customer_address = db.Column(db.String(300))
+    tile_id = db.Column(db.Integer, db.ForeignKey('tile.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending / confirmed / rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    tile = db.relationship('Tile', backref='online_orders')
+
+class SanitaryOrder(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    customer_name = db.Column(db.String(150), nullable=False)
+    customer_mobile = db.Column(db.String(15), nullable=False)
+    customer_email = db.Column(db.String(150))
+    customer_address = db.Column(db.String(300))
+    sanitary_id = db.Column(db.Integer, db.ForeignKey('sanitary_product.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sanitary = db.relationship('SanitaryProduct', backref='online_orders')
+
+
+# ================= DATABASE INIT =================
+def init_db():
+    db.create_all()
+
+    # Add image_filename column to tile table if it doesn't exist (migration for existing DBs)
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE tile ADD COLUMN image_filename VARCHAR(200)"))
+            conn.commit()
+    except Exception:
+        pass  # Column already exists or not SQLite — safe to ignore
+
+    # Add category column
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE tile ADD COLUMN category VARCHAR(50)"))
+            conn.commit()
+    except Exception:
+        pass
+
+    if not User.query.filter_by(username="admin").first():
+        admin = User(
+            username="admin",
+            email="admin@example.com",
+            password=generate_password_hash("admin123"),
+            role="admin",
+            is_active=True
+        )
+        db.session.add(admin)
+        db.session.commit()
+
+
+with app.app_context():
+    init_db()
+
+# ================= DECORATORS =================
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Please login first")
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def admin_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect('/login')
+        if session.get('role') != "admin":
+            flash("Admin access required")
+            return redirect('/dashboard')
+        return f(*args, **kwargs)
+    return wrapper
+
+
+# ================= AUTH =================
+@app.route("/")
+def index():
+    """Root: redirect logged-in users to dashboard, everyone else to the store."""
+    if 'user_id' in session:
+        return redirect('/dashboard')
+    return redirect('/store')
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if 'user_id' in session:
+        return redirect('/dashboard')
+
+    if request.method == "POST":
+        user = User.query.filter_by(username=request.form['username']).first()
+
+        if user and check_password_hash(user.password, request.form['password']):
+            if not user.is_active:
+                flash("Account deactivated")
+                return render_template("login.html")
+
+            session['user_id'] = user.id
+            session['role'] = user.role
+            session['user'] = user.username
+            return redirect('/dashboard')
+
+        flash("Invalid credentials")
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/store")
+
+
+# ================= DASHBOARD =================
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    tiles = Tile.query.all()
+    sanitary_products = SanitaryProduct.query.all()
+    return render_template("dashboard.html", tiles=tiles, categories=TILE_CATEGORIES,
+                           sanitary_products=sanitary_products, sanitary_categories=SANITARY_CATEGORIES)
+
+
+# ================= TILE CRUD =================
+@app.route("/add_tile", methods=["GET", "POST"])
+@admin_required
+def add_tile():
+    if request.method == "POST":
+        image_filename = None
+        file = request.files.get('tile_image')
+        if file and file.filename and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Make filename unique using a timestamp prefix
+            import time
+            filename = f"{int(time.time())}_{filename}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            image_filename = filename
+
+        tile = Tile(
+            brand=request.form['brand'],
+            category=request.form.get('category'),
+            size=request.form['size'],
+            buy_price=float(request.form.get('buy_price') or 0),
+            price=float(request.form['price']),
+            quantity=int(request.form['quantity']),
+            image_filename=image_filename
+        )
+        db.session.add(tile)
+        db.session.commit()
+        flash("Tile added successfully")
+        return redirect("/dashboard")
+
+    return render_template("add_tile.html", categories=TILE_CATEGORIES)
+
+
+@app.route("/edit_tile/<int:id>", methods=["GET", "POST"])
+@admin_required
+def edit_tile(id):
+    try:
+        tile = Tile.query.get_or_404(id)
+        if request.method == "POST":
+            try:
+                tile.brand = request.form['brand']
+                tile.category = request.form.get('category')
+                tile.size = request.form['size']
+                tile.buy_price = float(request.form.get('buy_price') or 0)
+                tile.price = float(request.form['price'])
+                tile.quantity = int(request.form['quantity'])
+
+                # Handle image upload
+                file = request.files.get('tile_image')
+                if file and file.filename and allowed_file(file.filename):
+                    # Delete old image if it exists
+                    if tile.image_filename:
+                        old_path = os.path.join(app.config['UPLOAD_FOLDER'], tile.image_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    import time
+                    filename = secure_filename(file.filename)
+                    filename = f"{int(time.time())}_{filename}"
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    tile.image_filename = filename
+
+                # Handle image removal
+                if request.form.get('remove_image') == '1':
+                    if tile.image_filename:
+                        old_path = os.path.join(app.config['UPLOAD_FOLDER'], tile.image_filename)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    tile.image_filename = None
+
+                db.session.commit()
+                flash("Tile updated successfully")
+                return redirect("/dashboard")
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error updating tile: {str(e)}")
+                return render_template("add_tile.html", tile=tile, categories=TILE_CATEGORIES)
+        return render_template("add_tile.html", tile=tile, categories=TILE_CATEGORIES)
+    except Exception as e:
+        err = traceback.format_exc()
+        print(f"DEBUG EDIT_TILE ERROR: {err}")
+        flash(f"System Error: {str(e)}")
+        return redirect("/dashboard")
+
+
+@app.route("/delete_tile/<int:id>")
+@admin_required
+def delete_tile(id):
+    tile = Tile.query.get_or_404(id)
+    db.session.delete(tile)
+    db.session.commit()
+    flash("Tile deleted successfully")
+    return redirect("/dashboard")
+
+
+# ================= SANITARY CRUD =================
+@app.route("/add_sanitary", methods=["GET", "POST"])
+@admin_required
+def add_sanitary():
+    if request.method == "POST":
+        image_filename = None
+        file = request.files.get('product_image')
+        if file and file.filename and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            import time
+            filename = f"{int(time.time())}_{filename}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            image_filename = filename
+
+        product = SanitaryProduct(
+            name=request.form['name'],
+            category=request.form['category'],
+            brand=request.form.get('brand'),
+            size=request.form.get('size'),
+            price=float(request.form['price']),
+            quantity=int(request.form['quantity']),
+            description=request.form.get('description'),
+            image_filename=image_filename
+        )
+        db.session.add(product)
+        db.session.commit()
+        flash("Sanitary product added successfully")
+        return redirect("/dashboard")
+
+    return render_template("add_sanitary.html", categories=SANITARY_CATEGORIES)
+
+
+@app.route("/edit_sanitary/<int:id>", methods=["GET", "POST"])
+@admin_required
+def edit_sanitary(id):
+    try:
+        product = SanitaryProduct.query.get_or_404(id)
+        if request.method == "POST":
+            product.name = request.form['name']
+            product.category = request.form['category']
+            product.brand = request.form.get('brand')
+            product.size = request.form.get('size')
+            product.price = float(request.form['price'])
+            product.quantity = int(request.form['quantity'])
+            product.description = request.form.get('description')
+
+            file = request.files.get('product_image')
+            if file and file.filename and allowed_file(file.filename):
+                if product.image_filename:
+                    old_path = os.path.join(app.config['UPLOAD_FOLDER'], product.image_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                import time
+                filename = secure_filename(file.filename)
+                filename = f"{int(time.time())}_{filename}"
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                product.image_filename = filename
+
+            if request.form.get('remove_image') == '1':
+                if product.image_filename:
+                    old_path = os.path.join(app.config['UPLOAD_FOLDER'], product.image_filename)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                product.image_filename = None
+
+            db.session.commit()
+            flash("Sanitary product updated successfully")
+            return redirect("/dashboard")
+        return render_template("add_sanitary.html", product=product, categories=SANITARY_CATEGORIES)
+    except Exception as e:
+        flash(f"System Error: {str(e)}")
+        return redirect("/dashboard")
+
+
+@app.route("/delete_sanitary/<int:id>")
+@admin_required
+def delete_sanitary(id):
+    product = SanitaryProduct.query.get_or_404(id)
+    db.session.delete(product)
+    db.session.commit()
+    flash("Sanitary product deleted successfully")
+    return redirect("/dashboard")
+
+
+@app.route("/uploads/<filename>")
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+@app.route("/stock_availability_pdf")
+@admin_required
+def stock_availability_pdf():
+    from xhtml2pdf import pisa
+    tiles = Tile.query.all()
+    html = render_template("stock_availability_pdf.html", tiles=tiles)
+    result = io.BytesIO()
+    pisa.CreatePDF(html, dest=result)
+    response = make_response(result.getvalue())
+    response.headers['Content-Type'] = "application/pdf"
+    response.headers['Content-Disposition'] = "attachment; filename=stock_availability.pdf"
+    return response
+
+
+# ================= USER MANAGEMENT =================
+@app.route("/user_management")
+@admin_required
+def user_management():
+    users = User.query.all()
+    return render_template("user_management.html", users=users)
+
+
+@app.route("/create_user", methods=["GET", "POST"])
+@admin_required
+def create_user():
+    if request.method == "POST":
+        username = request.form['username']
+        email = request.form.get('email')
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        role = request.form['role']
+
+        if password != confirm_password:
+            flash("Passwords do not match")
+            return render_template("add_user.html")
+        
+        if User.query.filter_by(username=username).first():
+            flash("Username already exists")
+            return render_template("add_user.html")
+
+        user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(password),
+            role=role,
+            is_active=True
+        )
+        db.session.add(user)
+        db.session.commit()
+        flash("User created successfully")
+        return redirect(url_for("user_management"))
+
+    return render_template("add_user.html")
+
+
+@app.route("/edit_user/<int:user_id>", methods=["GET", "POST"])
+@admin_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if request.method == "POST":
+        user.email = request.form.get('email')
+        user.role = request.form['role']
+        new_password = request.form.get('new_password')
+        if new_password:
+            user.password = generate_password_hash(new_password)
+        db.session.commit()
+        flash("User updated successfully")
+        return redirect(url_for("user_management"))
+    return render_template("edit_user.html", user=user)
+
+
+@app.route("/toggle_user_status/<int:user_id>", methods=["POST"])
+@admin_required
+def toggle_user_status(user_id):
+    if user_id == session.get('user_id'):
+        flash("Cannot deactivate yourself")
+        return redirect(url_for("user_management"))
+    user = User.query.get_or_404(user_id)
+    user.is_active = not user.is_active
+    db.session.commit()
+    flash(f"User {'activated' if user.is_active else 'deactivated'} successfully")
+    return redirect(url_for("user_management"))
+
+
+@app.route("/delete_user/<int:user_id>", methods=["POST"])
+@admin_required
+def delete_user(user_id):
+    if user_id == session.get('user_id'):
+        flash("Cannot delete yourself")
+        return redirect(url_for("user_management"))
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash("User deleted successfully")
+    return redirect(url_for("user_management"))
+
+
+# ================= BILLING =================
+@app.route("/billing", methods=["GET", "POST"])
+@login_required
+def billing():
+    try:
+        tiles = Tile.query.all()
+        sanitary_products = SanitaryProduct.query.all()
+
+        if request.method == "POST":
+            bill = Bill(
+                customer_name=request.form.get("customer_name"),
+                customer_mobile=request.form.get("customer_mobile"),
+                total=0,
+                gst=float(request.form.get("gst") or 0),
+                discount=float(request.form.get("discount") or 0)
+            )
+            db.session.add(bill)
+            db.session.commit()
+
+            subtotal = 0
+
+            # Process Tiles
+            for tile in tiles:
+                qty_str = request.form.get(f"qty_{tile.id}", "0")
+                qty = int(qty_str) if qty_str.isdigit() else 0
+                
+                if qty > 0 and tile.quantity >= qty:
+                    tile.quantity -= qty
+                    item_total = tile.price * qty
+                    subtotal += item_total
+
+                    item = BillItem(
+                        bill_id=bill.id,
+                        tile_name=tile.brand,
+                        size=tile.size,
+                        price=tile.price,
+                        quantity=qty,
+                        total=item_total
+                    )
+                    db.session.add(item)
+                    
+            # Process Sanitary Products
+            for product in sanitary_products:
+                qty_str = request.form.get(f"qty_sanitary_{product.id}", "0")
+                qty = int(qty_str) if qty_str.isdigit() else 0
+                
+                if qty > 0 and product.quantity >= qty:
+                    product.quantity -= qty
+                    item_total = product.price * qty
+                    subtotal += item_total
+
+                    item = BillItem(
+                        bill_id=bill.id,
+                        tile_name=product.name,
+                        size=product.brand, # Store brand here for sanitary products
+                        price=product.price,
+                        quantity=qty,
+                        total=item_total
+                    )
+                    db.session.add(item)
+
+            bill.total = subtotal + (subtotal * bill.gst / 100) - bill.discount
+            db.session.commit()
+
+            return redirect(url_for("invoice", bill_id=bill.id))
+
+        return render_template("billing.html", tiles=tiles, sanitary_products=sanitary_products)
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error in billing: {str(e)}")
+        # Log the error for Render logs
+        print(f"DEBUG BILLING ERROR: {str(e)}")
+        return redirect("/dashboard")
+
+
+# ================= SALES HISTORY =================
+@app.route("/sales_history")
+@login_required
+def sales_history():
+    bills = Bill.query.order_by(Bill.date.desc()).all()
+    return render_template("history.html", bills=bills)
+
+
+@app.route("/delete_bill/<int:id>")
+@admin_required
+def delete_bill(id):
+    bill = Bill.query.get_or_404(id)
+    # BillItems will be deleted automatically due to cascade
+    db.session.delete(bill)
+    db.session.commit()
+    flash("Invoice deleted successfully")
+    return redirect("/sales_history")
+
+
+@app.route("/edit_bill/<int:id>", methods=["GET", "POST"])
+@admin_required
+def edit_bill(id):
+    bill = Bill.query.get_or_404(id)
+    if request.method == "POST":
+        try:
+            bill.customer_name = request.form.get('customer_name')
+            bill.customer_mobile = request.form.get('customer_mobile')
+            bill.gst = float(request.form.get('gst') or 0)
+            bill.discount = float(request.form.get('discount') or 0)
+            
+            # Recalculate total
+            # We need to sum up items. If no backref, we query. 
+            # But I added backref 'bill_ref' or relationship 'items'.
+            items = BillItem.query.filter_by(bill_id=bill.id).all()
+            subtotal = sum(item.total for item in items)
+            bill.total = subtotal + (subtotal * bill.gst / 100) - bill.discount
+            
+            db.session.commit()
+            flash("Invoice updated successfully")
+            return redirect("/sales_history")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating invoice: {str(e)}")
+            return render_template("edit_bill.html", bill=bill)
+    return render_template("edit_bill.html", bill=bill)
+
+
+@app.route("/clear_history", methods=["POST"])
+@admin_required
+def clear_history():
+    try:
+        BillItem.query.delete()
+        Bill.query.delete()
+        db.session.commit()
+        flash("All sales history cleared")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error clearing history: {str(e)}")
+    return redirect("/sales_history")
+
+
+# ================= SALES REPORT =================
+@app.route("/sales_report")
+@admin_required
+def sales_report():
+    total_sales = db.session.query(func.sum(Bill.total)).scalar() or 0
+    total_bills = Bill.query.count()
+
+    return render_template(
+        "sales_report.html",
+        total_sales=total_sales,
+        total_bills=total_bills
+    )
+   
+# ================= INVOICE =================
+@app.route("/invoice/<int:bill_id>")
+@login_required
+def invoice(bill_id):
+    bill = Bill.query.get_or_404(bill_id)
+    items = BillItem.query.filter_by(bill_id=bill_id).all()
+
+ # Construct WhatsApp Message
+    msg = f"🏬 *SSNV Store*\n"
+    msg += f"━━━━━━━━━━━━━━━━━━\n"
+    msg += f"Dear {bill.customer_name or 'Customer'},\n"
+    msg += f"Thank you for shopping with us! 🙏\n\n"
+    msg += f"🧾 *Invoice #{bill.id}*\n"
+    msg += f"📅 Date: {bill.date.strftime('%d %b %Y') if bill.date else 'N/A'}\n"
+    msg += f"━━━━━━━━━━━━━━━━━━\n"
+    msg += f"🛒 *Items Purchased:*\n"
+
+    subtotal = 0
+    for i, item in enumerate(items, 1):
+        subtotal += item.total
+        msg += f"{i}. {item.tile_name} ({item.size})\n"
+        msg += f"   Qty: {item.quantity} × ₹{item.price:.2f} = ₹{item.total:.2f}\n"
+
+    msg += f"━━━━━━━━━━━━━━━━━━\n"
+    msg += f"Subtotal:  ₹{subtotal:.2f}\n"
+    if bill.gst:
+        msg += f"GST ({bill.gst}%): ₹{subtotal * bill.gst / 100:.2f}\n"
+    if bill.discount:
+        msg += f"Discount:  -₹{bill.discount:.2f}\n"
+    msg += f"━━━━━━━━━━━━━━━━━━\n"
+    msg += f"💰 *Grand Total: ₹{bill.total:.2f}*\n"
+    msg += f"━━━━━━━━━━━━━━━━━━\n\n"
+    msg += f"Have a great day! 😊\n"
+    msg += f"— SSNV Store Team"
+
+    return render_template("invoice.html", bill=bill, items=items, whatsapp_message=msg)
+
+@app.route("/invoice_pdf/<int:bill_id>")
+@login_required
+def invoice_pdf(bill_id):
+    from xhtml2pdf import pisa
+
+    bill = Bill.query.get_or_404(bill_id)
+    items = BillItem.query.filter_by(bill_id=bill_id).all()
+
+    html = render_template("invoice_pdf.html", bill=bill, items=items)
+
+    result = io.BytesIO()
+    pisa.CreatePDF(html, dest=result)
+
+    response = make_response(result.getvalue())
+    response.headers['Content-Type'] = "application/pdf"
+    response.headers['Content-Disposition'] = f"attachment; filename=invoice_{bill.id}.pdf"
+    return response
+
+
+# ================= GLOBAL ERROR HANDLER =================
+@app.errorhandler(500)
+def handle_500_error(e):
+    db.session.rollback()
+    err = traceback.format_exc()
+    print(f"GLOBAL 500 ERROR:\n{err}")
+    return render_template("500.html", error=err), 500
+
+
+# ================= HEALTH CHECK =================
+@app.route("/health")
+def health():
+    return "App is running successfully!"
+
+
+# ================= ONLINE STORE =================
+@app.route("/store")
+def store():
+    search = request.args.get('search', '').strip()
+    size_filter = request.args.get('size', '').strip()
+    tiles = Tile.query.filter(Tile.quantity > 0)
+    if search:
+        tiles = tiles.filter(Tile.brand.ilike(f'%{search}%'))
+    if size_filter:
+        tiles = tiles.filter(Tile.size == size_filter)
+    tiles = tiles.all()
+    all_sizes = db.session.query(Tile.size).distinct().all()
+    all_sizes = [s[0] for s in all_sizes]
+    
+    sanitary_products = SanitaryProduct.query.filter(SanitaryProduct.quantity > 0)
+    if search:
+        sanitary_products = sanitary_products.filter(SanitaryProduct.name.ilike(f'%{search}%') | SanitaryProduct.brand.ilike(f'%{search}%'))
+    sanitary_products = sanitary_products.all()
+    
+    return render_template("store.html", tiles=tiles, all_sizes=all_sizes,
+                           search=search, size_filter=size_filter, categories=TILE_CATEGORIES,
+                           sanitary_products=sanitary_products, sanitary_categories=SANITARY_CATEGORIES)
+
+
+@app.route("/store/order/<int:tile_id>", methods=["POST"])
+def place_online_order(tile_id):
+    tile = Tile.query.get_or_404(tile_id)
+    qty = int(request.form.get('quantity', 1))
+    if qty < 1 or tile.quantity < qty:
+        flash("Requested quantity not available")
+        return redirect(url_for('store'))
+    order = OnlineOrder(
+        customer_name=request.form.get('customer_name', '').strip(),
+        customer_mobile=request.form.get('customer_mobile', '').strip(),
+        customer_email=request.form.get('customer_email', '').strip(),
+        customer_address=request.form.get('customer_address', '').strip(),
+        tile_id=tile.id,
+        quantity=qty,
+        total_price=tile.price * qty,
+        status='pending'
+    )
+    db.session.add(order)
+    db.session.commit()
+    return render_template("order_success.html", order=order, tile=tile)
+
+
+@app.route("/store/order_sanitary/<int:id>", methods=["POST"])
+def place_sanitary_order(id):
+    product = SanitaryProduct.query.get_or_404(id)
+    qty = int(request.form.get('quantity', 1))
+    if qty < 1 or product.quantity < qty:
+        flash("Requested quantity not available")
+        return redirect(url_for('store'))
+    order = SanitaryOrder(
+        customer_name=request.form.get('customer_name', '').strip(),
+        customer_mobile=request.form.get('customer_mobile', '').strip(),
+        customer_email=request.form.get('customer_email', '').strip(),
+        customer_address=request.form.get('customer_address', '').strip(),
+        sanitary_id=product.id,
+        quantity=qty,
+        total_price=product.price * qty,
+        status='pending'
+    )
+    db.session.add(order)
+    db.session.commit()
+    return render_template("order_success.html", order=order, product=product)
+
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html")
+
+
+# ================= ADMIN ORDERS =================
+@app.route("/admin/orders")
+@admin_required
+def admin_orders():
+    status_filter = request.args.get('status', '')
+    
+    orders = OnlineOrder.query
+    if status_filter:
+        orders = orders.filter_by(status=status_filter)
+    orders = orders.order_by(OnlineOrder.created_at.desc()).all()
+    
+    sanitary_orders = SanitaryOrder.query
+    if status_filter:
+        sanitary_orders = sanitary_orders.filter_by(status=status_filter)
+    sanitary_orders = sanitary_orders.order_by(SanitaryOrder.created_at.desc()).all()
+    
+    return render_template("orders.html", orders=orders, sanitary_orders=sanitary_orders, status_filter=status_filter)
+
+
+@app.route("/admin/orders/update/<int:order_id>", methods=["POST"])
+@admin_required
+def update_order_status(order_id):
+    order = OnlineOrder.query.get_or_404(order_id)
+    new_status = request.form.get('status')
+    if new_status in ('confirmed', 'rejected', 'pending'):
+        order.status = new_status
+        db.session.commit()
+        flash(f"Order #{order.id} marked as {new_status}")
+    return redirect(url_for('admin_orders'))
+
+
+@app.route("/admin/orders/update_sanitary/<int:order_id>", methods=["POST"])
+@admin_required
+def update_sanitary_order_status(order_id):
+    order = SanitaryOrder.query.get_or_404(order_id)
+    new_status = request.form.get('status')
+    if new_status in ('confirmed', 'rejected', 'pending'):
+        order.status = new_status
+        db.session.commit()
+        flash(f"Sanitary Order #{order.id} marked as {new_status}")
+    return redirect(url_for('admin_orders'))
+
+
+# ================= LOCAL RUN =================
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+

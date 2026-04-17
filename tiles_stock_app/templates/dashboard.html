@@ -1,0 +1,766 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Overview{% endblock %}
+{% block extra_css %}
+<style>
+  /* ===== ANIMATIONS ===== */
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .anim-item {
+    opacity: 0;
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .delay-1 {
+    animation-delay: 0.1s;
+  }
+
+  .delay-2 {
+    animation-delay: 0.2s;
+  }
+
+  .delay-3 {
+    animation-delay: 0.3s;
+  }
+
+  .delay-4 {
+    animation-delay: 0.4s;
+  }
+
+  /* ===== CARD GRID VIEW ===== */
+  .tile-grid-card {
+    background: #fff;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Gradient Top Border */
+  .tile-grid-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 10;
+  }
+
+  .tile-grid-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: rgba(124, 77, 255, 0.2);
+  }
+
+  .tile-grid-card:hover::before {
+    opacity: 1;
+  }
+
+  .tg-img-wrap {
+    position: relative;
+    height: 180px;
+    background: linear-gradient(135deg, #f8f5ff, #f0edf9);
+    overflow: hidden;
+  }
+
+  .tg-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .tile-grid-card:hover .tg-img-wrap img {
+    transform: scale(1.08);
+  }
+
+  .tg-no-img {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #b47cff;
+    opacity: 0.6;
+  }
+
+  .tg-no-img i {
+    font-size: 3rem;
+  }
+
+  .stock-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: #ff5275;
+    z-index: 5;
+  }
+
+  .badges-wrap {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 6;
+  }
+
+  .tg-body {
+    padding: 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tg-brand {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #0d0f14;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+
+  .tg-size {
+    display: inline-flex;
+    align-items: center;
+    background: #f0edf9;
+    color: var(--primary-dark);
+    border-radius: 8px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.85rem;
+    align-self: flex-start;
+  }
+
+  .tg-price {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+  }
+
+  .tg-stock-info {
+    font-size: 0.82rem;
+    color: #6b7280;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .tg-actions {
+    margin-top: auto;
+    padding-top: 1rem;
+    display: flex;
+    gap: 8px;
+  }
+
+  .tg-actions .btn {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* ===== VIEW TOGGLE ===== */
+  .view-toggle {
+    background: #f0edf9;
+    padding: 4px;
+    border-radius: 12px;
+    display: inline-flex;
+  }
+
+  .view-toggle .btn {
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
+    border: none;
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  .view-toggle .btn.active {
+    background: #fff;
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  /* ===== SEARCH ===== */
+  .search-wrapper {
+    position: relative;
+    min-width: 240px;
+  }
+
+  .search-wrapper .bi-search {
+    position: absolute;
+    left: 1rem;
+    top: 11px;
+    color: #9ca3af;
+  }
+
+  .search-wrapper .form-control {
+    padding-left: 2.5rem;
+    border-radius: 50px;
+    background: #f9fafb;
+  }
+
+  .search-wrapper .form-control:focus {
+    background: #fff;
+  }
+
+  #gridView,
+  #tableView {
+    animation: slideUp 0.3s ease;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-xl-3 anim-item delay-1">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="stat-label">Total Tiles</p>
+          <h3 class="stat-value">{{ tiles|length }}</h3>
+        </div>
+        <div class="stat-icon" style="background:var(--primary-gradient)">
+          <i class="bi bi-grid-3x3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3 anim-item delay-2">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="stat-label">In Stock</p>
+          <h3 class="stat-value">{{ tiles|selectattr('quantity','gt',0)|list|length }}</h3>
+        </div>
+        <div class="stat-icon" style="background:var(--success-gradient)">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3 anim-item delay-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="stat-label">Low Stock</p>
+          <h3 class="stat-value">{{ tiles|selectattr('quantity','lt',10)|selectattr('quantity','gt',0)|list|length }}
+          </h3>
+        </div>
+        <div class="stat-icon" style="background:var(--warning-gradient)">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3 anim-item delay-4">
+    <div class="stat-card">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="stat-label">Out of Stock</p>
+          <h3 class="stat-value">{{ tiles|selectattr('quantity','eq',0)|list|length }}</h3>
+        </div>
+        <div class="stat-icon" style="background:var(--danger-gradient)">
+          <i class="bi bi-x-circle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Master Tabs -->
+<ul class="nav nav-pills mb-4" id="inventoryTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active fw-bold px-4" id="tiles-tab" data-bs-toggle="tab" data-bs-target="#tiles-panel" type="button" role="tab">Tiles Inventory</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link fw-bold px-4 ms-2" id="sanitary-tab" data-bs-toggle="tab" data-bs-target="#sanitary-panel" type="button" role="tab" style="background-color: #f8f9fa;">Sanitary Products</button>
+  </li>
+</ul>
+
+<div class="tab-content" id="inventoryTabsContent">
+  <!-- Tiles Panel -->
+  <div class="tab-pane fade show active" id="tiles-panel" role="tabpanel">
+
+<!-- Main Inventory Section -->
+<div class="modern-card anim-item delay-4">
+  <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 py-3">
+    <div class="d-flex align-items-center gap-2">
+      <div
+        style="width:36px;height:36px;border-radius:10px;background:#f0edf9;display:flex;align-items:center;justify-content:center;color:var(--primary);">
+        <i class="bi bi-boxes" style="font-size:1.1rem;"></i>
+      </div>
+      <h5 class="mb-0">Tile Inventory</h5>
+    </div>
+
+    <div class="d-flex flex-column flex-md-row gap-3 w-100 w-lg-auto align-items-md-center">
+      <!-- Search -->
+      <form method="get" class="search-wrapper flex-grow-1">
+        <i class="bi bi-search"></i>
+        <input type="text" name="search" class="form-control" placeholder="Search brands, sizes..."
+          value="{{ request.args.get('search','') }}" />
+      </form>
+
+      <!-- Controls -->
+      <div class="d-flex gap-2">
+        <div class="view-toggle" role="group">
+          <button id="btnGrid" type="button" class="btn active" title="Card View" onclick="setView('grid')">
+            <i class="bi bi-grid-fill"></i>
+          </button>
+          <button id="btnTable" type="button" class="btn" title="Table View" onclick="setView('table')">
+            <i class="bi bi-list-ul"></i>
+          </button>
+        </div>
+
+        {% if session.get('role') == 'admin' %}
+        <a href="/stock_availability_pdf" class="btn btn-modern btn-outline-secondary d-flex align-items-center gap-2"
+          title="Export PDF">
+          <i class="bi bi-file-earmark-pdf"></i><span class="d-none d-xl-inline">Export</span>
+        </a>
+        <a href="/add_tile" class="btn btn-modern btn-gradient-primary d-flex align-items-center gap-2">
+          <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline">Add Tile</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories Filter -->
+  <div class="border-top px-3 py-2 bg-white d-flex align-items-center" style="overflow-x: auto; gap: 0.5rem; white-space: nowrap;">
+    <button class="btn btn-sm btn-dark rounded-pill category-filter active" data-filter="all">All Tiles</button>
+    {% for cat in categories %}
+    <button class="btn btn-sm btn-outline-secondary rounded-pill category-filter" data-filter="{{ cat }}">{{ cat }}</button>
+    {% endfor %}
+    <button class="btn btn-sm btn-outline-secondary rounded-pill category-filter" data-filter="uncategorized">Uncategorized</button>
+  </div>
+
+  <div class="card-body bg-light">
+    {% if tiles %}
+
+    <!-- ===== GRID VIEW ===== -->
+    <div id="gridView">
+      <div class="row g-4">
+        {% for tile in tiles %}
+        <div class="col-sm-6 col-lg-4 col-xl-3 tile-item" data-category="{{ tile.category or 'uncategorized' }}">
+          <div class="tile-grid-card">
+            <div class="tg-img-wrap">
+              {% if tile.quantity == 0 %}
+              <div class="stock-overlay">Out of Stock</div>
+              {% endif %}
+
+              <div class="badges-wrap">
+                {% if tile.quantity > 0 and tile.quantity < 10 %} <span class="badge badge-stock-low shadow-sm">Low: {{
+                  tile.quantity }}</span>
+                  {% elif tile.quantity >= 10 %}
+                  <span class="badge badge-stock-high shadow-sm">{{ tile.quantity }} in stock</span>
+                  {% endif %}
+              </div>
+
+              {% if tile.image_filename %}
+              <img src="{{ url_for('uploaded_file', filename=tile.image_filename) }}" alt="{{ tile.brand }}"
+                loading="lazy" />
+              {% else %}
+              <div class="tg-no-img"><i class="bi bi-image"></i></div>
+              {% endif %}
+            </div>
+
+            <div class="tg-body">
+              <div class="tg-brand">{{ tile.brand }}</div>
+              {% if tile.category %}
+              <div class="mb-2"><span class="badge bg-secondary" style="font-size:0.7rem;">{{ tile.category }}</span></div>
+              {% endif %}
+              <span class="tg-size"><i class="bi bi-arrows-fullscreen me-1" style="font-size:0.7rem;"></i>{{ tile.size
+                }}</span>
+
+              <div class="tg-price">₹{{ "%.2f"|format(tile.price) }}</div>
+
+              {% if session.get('role') == 'admin' %}
+              {% if tile.buy_price %}
+              <div class="tg-stock-info">
+                <i class="bi bi-bag-check-fill text-danger me-1"></i>Buy Price: ₹{{ "%.2f"|format(tile.buy_price) }}
+              </div>
+              {% endif %}
+
+              <div class="tg-actions">
+                <a href="/edit_tile/{{ tile.id }}" class="btn btn-outline-primary">
+                  <i class="bi bi-pencil-square me-1"></i>Edit
+                </a>
+                <button class="btn" style="background:#fee2e2;color:#991b1b;flex:0 0 auto;width:38px;"
+                  onclick="confirmDelete('/delete_tile/{{ tile.id }}','{{ tile.brand }}')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              {% else %}
+              <div class="tg-actions">
+                <a href="{{ url_for('billing.create_bill') }}" class="btn btn-gradient-primary w-100">
+                  <i class="bi bi-receipt me-1"></i>Create Bill
+                </a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ===== TABLE VIEW ===== -->
+    <div id="tableView"
+      style="display:none;background:#fff;border-radius:12px;border:1px solid #e5dff5;overflow:hidden;">
+      <div class="table-responsive">
+        <table class="table modern-table mb-0 align-middle">
+          <thead>
+            <tr>
+              <th style="width:60px;">Image</th>
+              <th>Tile Info</th>
+              {% if session.get('role') == 'admin' %}
+              <th>Buy Price</th>
+              {% endif %}
+              <th>Sell Price</th>
+              {% if session.get('role') == 'admin' %}
+              <th>Margin</th>
+              {% endif %}
+              <th>Stock Status</th>
+              {% if session.get('role') == 'admin' %}
+              <th class="text-end">Actions</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for tile in tiles %}
+            <tr class="tile-item {{ 'bg-light text-muted' if tile.quantity == 0 else '' }}" data-category="{{ tile.category or 'uncategorized' }}">
+              <td>
+                {% if tile.image_filename %}
+                <img src="{{ url_for('uploaded_file', filename=tile.image_filename) }}" alt="{{ tile.brand }}"
+                  style="width:48px;height:48px;object-fit:cover;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);" />
+                {% else %}
+                <div
+                  style="width:48px;height:48px;border-radius:10px;background:#f0edf9;display:flex;align-items:center;justify-content:center;color:var(--primary);">
+                  <i class="bi bi-image" style="font-size:1.2rem;"></i>
+                </div>
+                {% endif %}
+              </td>
+              <td>
+                <div class="fw-bold text-dark" style="font-family:'Outfit',sans-serif;font-size:1.05rem;">{{ tile.brand
+                  }} <span class="text-muted fw-normal" style="font-size:0.8rem;font-family:'Inter',sans-serif;">(#{{
+                    tile.id }})</span></div>
+                {% if tile.category %}
+                <div class="mb-1"><span class="badge bg-secondary" style="font-size:0.7rem;">{{ tile.category }}</span></div>
+                {% endif %}
+                <div class="text-muted" style="font-size:0.85rem;"><i class="bi bi-arrows-fullscreen me-1"></i>{{
+                  tile.size }}</div>
+              </td>
+              {% if session.get('role') == 'admin' %}
+              <td>
+                {% if tile.buy_price %}
+                <span class="text-danger fw-semibold">₹{{ "%.2f"|format(tile.buy_price) }}</span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              {% endif %}
+              <td><span class="fs-6 fw-bold" style="color:var(--primary);">₹{{ "%.2f"|format(tile.price) }}</span></td>
+              {% if session.get('role') == 'admin' %}
+              <td>
+                {% if tile.buy_price and tile.price > 0 %}
+                {% set margin = ((tile.price - tile.buy_price) / tile.price * 100) %}
+                {% if margin >= 20 %}<span class="badge badge-stock-high">{{ "%.0f"|format(margin) }}%</span>
+                {% elif margin >= 10 %}<span class="badge badge-stock-low">{{ "%.0f"|format(margin) }}%</span>
+                {% else %}<span class="badge badge-stock-out">{{ "%.0f"|format(margin) }}%</span>{% endif %}
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              {% endif %}
+              <td>
+                {% if tile.quantity == 0 %}<span class="badge badge-stock-out"><i class="bi bi-x-circle me-1"></i>Out of
+                  Stock</span>
+                {% elif tile.quantity < 10 %}<span class="badge badge-stock-low"><i
+                    class="bi bi-exclamation-triangle me-1"></i>Low: {{ tile.quantity }}</span>
+                  {% else %}<span class="badge badge-stock-high"><i class="bi bi-check-circle me-1"></i>{{ tile.quantity
+                    }} In Stock</span>{% endif %}
+              </td>
+              {% if session.get('role') == 'admin' %}
+              <td class="text-end">
+                <div class="btn-group">
+                  <a href="/edit_tile/{{ tile.id }}" class="btn btn-sm btn-light border shadow-sm text-primary"
+                    title="Edit">
+                    <i class="bi bi-pencil-square"></i>
+                  </a>
+                  <button class="btn btn-sm btn-light border shadow-sm text-danger" title="Delete"
+                    onclick="confirmDelete('/delete_tile/{{ tile.id }}','{{ tile.brand }}')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="empty-state py-5">
+      <div
+        style="background:var(--primary-gradient);width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;box-shadow:0 10px 30px rgba(124,77,255,0.3);">
+        <i class="bi bi-box-seam" style="font-size:2.5rem;color:#fff;opacity:1;margin:0;"></i>
+      </div>
+      <h4 class="text-dark fw-bold" style="font-family:'Outfit',sans-serif;">Inventory is Empty</h4>
+      <p class="text-muted mb-4">You haven't added any tiles to the store yet.</p>
+      {% if session.get('role') == 'admin' %}
+      <a href="/add_tile" class="btn btn-gradient-primary btn-modern px-4 py-2">
+        <i class="bi bi-plus-lg me-2"></i>Add Your First Tile
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+</div> <!-- End Tiles Panel -->
+
+<!-- Sanitary Panel -->
+<div class="tab-pane fade" id="sanitary-panel" role="tabpanel">
+<div class="modern-card anim-item delay-4">
+  <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 py-3">
+    <div class="d-flex align-items-center gap-2">
+      <div style="width:36px;height:36px;border-radius:10px;background:#f0edf9;display:flex;align-items:center;justify-content:center;color:var(--primary);">
+        <i class="bi bi-droplet-fill" style="font-size:1.1rem;"></i>
+      </div>
+      <h5 class="mb-0">Sanitary Inventory</h5>
+    </div>
+
+    <div class="d-flex gap-2">
+      {% if session.get('role') == 'admin' %}
+      <a href="/add_sanitary" class="btn btn-modern btn-gradient-primary d-flex align-items-center gap-2">
+        <i class="bi bi-plus-lg"></i><span class="d-none d-sm-inline">Add Sanitary Product</span>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Categories Filter -->
+  <div class="border-top px-3 py-2 bg-white d-flex align-items-center" style="overflow-x: auto; gap: 0.5rem; white-space: nowrap;">
+    <button class="btn btn-sm btn-dark rounded-pill sanitary-filter active" data-filter="all">All Products</button>
+    {% for cat in sanitary_categories %}
+    <button class="btn btn-sm btn-outline-secondary rounded-pill sanitary-filter" data-filter="{{ cat }}">{{ cat }}</button>
+    {% endfor %}
+  </div>
+
+  <div class="card-body bg-light">
+    {% if sanitary_products %}
+    <div class="row g-4">
+      {% for product in sanitary_products %}
+      <div class="col-sm-6 col-lg-4 col-xl-3 sanitary-item" data-category="{{ product.category }}">
+        <div class="tile-grid-card">
+          <div class="tg-img-wrap">
+            {% if product.quantity == 0 %}
+            <div class="stock-overlay">Out of Stock</div>
+            {% endif %}
+            <div class="badges-wrap">
+              {% if product.quantity > 0 and product.quantity < 10 %}
+              <span class="badge badge-stock-low shadow-sm">Low: {{ product.quantity }}</span>
+              {% elif product.quantity >= 10 %}
+              <span class="badge badge-stock-high shadow-sm">{{ product.quantity }} in stock</span>
+              {% endif %}
+            </div>
+            {% if product.image_filename %}
+            <img src="{{ url_for('uploaded_file', filename=product.image_filename) }}" alt="{{ product.name }}" loading="lazy" />
+            {% else %}
+            <div class="tg-no-img"><i class="bi bi-image"></i></div>
+            {% endif %}
+          </div>
+          <div class="tg-body">
+            <div class="tg-brand">{{ product.name }}</div>
+            <div class="mb-2"><span class="badge bg-secondary" style="font-size:0.7rem;">{{ product.category }}</span></div>
+            {% if product.brand %}
+            <div class="text-muted small mb-2"><i class="bi bi-tag-fill me-1"></i>{{ product.brand }}</div>
+            {% endif %}
+            <div class="tg-price">₹{{ "%.2f"|format(product.price) }}</div>
+            {% if session.get('role') == 'admin' %}
+            <div class="tg-actions">
+              <a href="/edit_sanitary/{{ product.id }}" class="btn btn-outline-primary"><i class="bi bi-pencil-square me-1"></i>Edit</a>
+              <button class="btn" style="background:#fee2e2;color:#991b1b;flex:0 0 auto;width:38px;" onclick="confirmDelete('/delete_sanitary/{{ product.id }}','{{ product.name }}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+            {% else %}
+            <div class="tg-actions">
+              <a href="{{ url_for('billing.create_bill') }}" class="btn btn-gradient-primary w-100"><i class="bi bi-receipt me-1"></i>Create Bill</a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state py-5">
+      <div style="background:var(--primary-gradient);width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;box-shadow:0 10px 30px rgba(124,77,255,0.3);">
+        <i class="bi bi-droplet" style="font-size:2.5rem;color:#fff;opacity:1;margin:0;"></i>
+      </div>
+      <h4 class="text-dark fw-bold">No Sanitary Products Found</h4>
+      <p class="text-muted mb-4">You haven't added any sanitary products yet.</p>
+      {% if session.get('role') == 'admin' %}
+      <a href="/add_sanitary" class="btn btn-gradient-primary btn-modern px-4 py-2"><i class="bi bi-plus-lg me-2"></i>Add Product</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+</div> <!-- End Sanitary Panel -->
+
+</div> <!-- End Tab Content -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Category Filtering
+  document.addEventListener('DOMContentLoaded', () => {
+    const filterBtns = document.querySelectorAll('.category-filter');
+    const tileItems = document.querySelectorAll('.tile-item');
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        filterBtns.forEach(b => {
+          b.classList.remove('btn-dark', 'active');
+          b.classList.add('btn-outline-secondary');
+        });
+        this.classList.remove('btn-outline-secondary');
+        this.classList.add('btn-dark', 'active');
+        
+        const filter = this.getAttribute('data-filter');
+        tileItems.forEach(el => {
+          if (filter === 'all' || el.getAttribute('data-category') === filter) {
+            el.style.display = '';
+          } else {
+            el.style.display = 'none';
+          }
+        });
+      });
+    });
+  });
+
+  // Sanitary Filtering
+  document.addEventListener('DOMContentLoaded', () => {
+    const sanitaryFilterBtns = document.querySelectorAll('.sanitary-filter');
+    const sanitaryItems = document.querySelectorAll('.sanitary-item');
+
+    sanitaryFilterBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        sanitaryFilterBtns.forEach(b => {
+          b.classList.remove('btn-dark', 'active');
+          b.classList.add('btn-outline-secondary');
+        });
+        this.classList.remove('btn-outline-secondary');
+        this.classList.add('btn-dark', 'active');
+        
+        const filter = this.getAttribute('data-filter');
+        sanitaryItems.forEach(el => {
+          if (filter === 'all' || el.getAttribute('data-category') === filter) {
+            el.style.display = '';
+          } else {
+            el.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Style unselected tab dynamically
+    const sanitaryTab = document.getElementById('sanitary-tab');
+    const tilesTab = document.getElementById('tiles-tab');
+    sanitaryTab.addEventListener('click', () => {
+        sanitaryTab.style.backgroundColor = '';
+        tilesTab.style.backgroundColor = '#f8f9fa';
+        localStorage.setItem('dashMainTab', 'sanitary');
+    });
+    tilesTab.addEventListener('click', () => {
+        tilesTab.style.backgroundColor = '';
+        sanitaryTab.style.backgroundColor = '#f8f9fa';
+        localStorage.setItem('dashMainTab', 'tiles');
+    });
+
+    // Restore tab
+    if (localStorage.getItem('dashMainTab') === 'sanitary') {
+        new bootstrap.Tab(sanitaryTab).show();
+        sanitaryTab.style.backgroundColor = '';
+        tilesTab.style.backgroundColor = '#f8f9fa';
+    }
+  });
+
+  // Persist view preference
+  function setView(v) {
+    localStorage.setItem('dashView', v);
+    if (v === 'grid') {
+      document.getElementById('gridView').style.display = '';
+      document.getElementById('tableView').style.display = 'none';
+      document.getElementById('btnGrid').classList.add('active');
+      document.getElementById('btnTable').classList.remove('active');
+    } else {
+      document.getElementById('gridView').style.display = 'none';
+      document.getElementById('tableView').style.display = '';
+      document.getElementById('btnGrid').classList.remove('active');
+      document.getElementById('btnTable').classList.add('active');
+    }
+  }
+
+  // Load saved preference
+  const saved = localStorage.getItem('dashView') || 'grid';
+  setView(saved);
+
+  // Number count up animation for stats
+  document.addEventListener('DOMContentLoaded', () => {
+    const statValues = document.querySelectorAll('.stat-value');
+    statValues.forEach(el => {
+      const target = parseInt(el.innerText);
+      if (isNaN(target) || target === 0) return;
+
+      let count = 0;
+      const speed = target / 30; // 30 frames
+
+      const updateCount = () => {
+        count += speed;
+        if (count < target) {
+          el.innerText = Math.ceil(count);
+          requestAnimationFrame(updateCount);
+        } else {
+          el.innerText = target;
+        }
+      };
+
+      el.innerText = '0';
+      setTimeout(updateCount, 400); // Wait for the card animation to finish
+    });
+  });
+</script>
+{% endblock %}

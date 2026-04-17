@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% block title %}Online Orders{% endblock %}
+{% block page_title %}Order Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== ANIMATIONS ===== */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(15px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .anim-fade {
+        opacity: 0;
+        animation: slideInUp 0.4s ease forwards;
+    }
+
+    .delay-1 {
+        animation-delay: 0.1s;
+    }
+
+    .delay-2 {
+        animation-delay: 0.2s;
+    }
+
+    /* ===== MODERN PILLS / TABS ===== */
+    .filter-tabs {
+        display: inline-flex;
+        background: #fff;
+        padding: 0.35rem;
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        gap: 0.25rem;
+    }
+
+    .filter-tab {
+        padding: 0.55rem 1.25rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 600;
+        color: #6b7280;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        border: none;
+        background: transparent;
+    }
+
+    .filter-tab:hover {
+        color: var(--primary);
+        background: #f8f5ff;
+    }
+
+    .filter-tab.active {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
+    }
+
+    .filter-tab.active.tab-pending {
+        background: #f59e0b;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .filter-tab.active.tab-confirmed {
+        background: #10b981;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .filter-tab.active.tab-rejected {
+        background: #ef4444;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    /* ===== STATUS INDICATORS ===== */
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .status-pending {
+        background: #fffdeb;
+        color: #b45309;
+        border: 1px solid #fde68a;
+    }
+
+    .status-pending .status-dot {
+        background: #f59e0b;
+        box-shadow: 0 0 6px #f59e0b;
+    }
+
+    .status-confirmed {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+
+    .status-confirmed .status-dot {
+        background: #10b981;
+        box-shadow: 0 0 6px #10b981;
+    }
+
+    .status-rejected {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    .status-rejected .status-dot {
+        background: #ef4444;
+        box-shadow: 0 0 6px #ef4444;
+    }
+
+    /* ===== ORDER CARD STYLE ROW ===== */
+    .order-row {
+        transition: all 0.2s;
+    }
+
+    .order-row:hover {
+        background: #fdfcff !important;
+    }
+
+    .customer-details {
+        line-height: 1.5;
+    }
+
+    .customer-name {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0d0f14;
+    }
+
+    .contact-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #f3f4f6;
+        color: #4b5563;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        margin-top: 4px;
+        margin-right: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="row g-4 mb-4 anim-fade">
+    <div class="col-sm-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="stat-label">Total Orders</p>
+                    <h3 class="stat-value">{{ orders|length }}</h3>
+                </div>
+                <div class="stat-icon" style="background:var(--primary-gradient)">
+                    <i class="bi bi-box2-heart"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="stat-label">Action Required</p>
+                    <h3 class="stat-value">{{ orders|selectattr('status','eq','pending')|list|length }}</h3>
+                </div>
+                <div class="stat-icon" style="background:var(--warning-gradient)">
+                    <i class="bi bi-hourglass-top"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="stat-card">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="stat-label">Fulfilled</p>
+                    <h3 class="stat-value">{{ orders|selectattr('status','eq','confirmed')|list|length }}</h3>
+                </div>
+                <div class="stat-icon" style="background:var(--success-gradient)">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- List Card -->
+<div class="modern-card anim-fade delay-1">
+    <div
+        class="card-header bg-white d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 py-3 border-bottom-0">
+        <div class="d-flex align-items-center gap-2">
+            <div
+                style="width:36px;height:36px;border-radius:10px;background:#fff5eb;display:flex;align-items:center;justify-content:center;color:#f97316;">
+                <i class="bi bi-shop-window" style="font-size:1.1rem;"></i>
+            </div>
+            <h5 class="mb-0">Website Orders</h5>
+        </div>
+
+        <div class="filter-tabs overflow-auto">
+            <a href="?status=" class="filter-tab {% if not status_filter %}active{% endif %}">All</a>
+            <a href="?status=pending"
+                class="filter-tab tab-pending {% if status_filter=='pending' %}active{% endif %}">Pending</a>
+            <a href="?status=confirmed"
+                class="filter-tab tab-confirmed {% if status_filter=='confirmed' %}active{% endif %}">Confirmed</a>
+            <a href="?status=rejected"
+                class="filter-tab tab-rejected {% if status_filter=='rejected' %}active{% endif %}">Rejected</a>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive border-top" style="border-color: #f3f4f6 !important;">
+            <table class="table modern-table mb-0 align-middle table-hover">
+                <thead>
+                    <tr>
+                        <th style="width:80px;">Order</th>
+                        <th>Customer Details</th>
+                        <th>Product Info</th>
+                        <th>Amount</th>
+                        <th>Order Date</th>
+                        <th>Status</th>
+                        <th class="text-end" style="width:140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if orders %}
+                    {% for order in orders %}
+                    <tr class="order-row">
+                        <td>
+                            <strong style="color:var(--primary);font-family:'Outfit',sans-serif;">#{{ order.id
+                                }}</strong>
+                        </td>
+                        <td class="customer-details pt-3 pb-3">
+                            <div class="customer-name">{{ order.customer_name }}</div>
+                            <div class="d-flex flex-wrap mt-1">
+                                <span class="contact-tag"><i class="bi bi-telephone-fill"></i>{{ order.customer_mobile
+                                    }}</span>
+                                {% if order.customer_email %}
+                                <span class="contact-tag"><i class="bi bi-envelope-fill"></i>{{ order.customer_email
+                                    }}</span>
+                                {% endif %}
+                            </div>
+                            {% if order.customer_address %}
+                            <div class="text-muted mt-2 d-flex align-items-start gap-1" style="font-size:0.8rem;">
+                                <i class="bi bi-geo-alt-fill text-danger mt-1"></i>
+                                <span>{{ order.customer_address }}</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ order.tile.brand if order.tile else 'Unknown Tile' }}
+                            </div>
+                            {% if order.tile %}
+                            <div class="text-muted" style="font-size:0.8rem;"><i class="bi bi-box me-1"></i>{{
+                                order.quantity }} Boxes</div>
+                            <span class="badge mt-1" style="background:#f0edf9;color:var(--primary);font-weight:600;"><i
+                                    class="bi bi-arrows-fullscreen me-1"></i>{{ order.tile.size }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold fs-6 text-dark" style="font-family:'Outfit',sans-serif;">₹{{
+                                "%.2f"|format(order.total_price) }}</div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="fw-semibold text-dark"><i class="bi bi-calendar3 me-1 text-muted"></i>{{
+                                    order.created_at.strftime('%d %b %Y') if order.created_at else '—' }}</span>
+                                <span class="text-muted mt-1" style="font-size:0.8rem;"><i
+                                        class="bi bi-clock me-1"></i>{{ order.created_at.strftime('%I:%M %p') if
+                                    order.created_at else '' }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if order.status == 'confirmed' %}
+                            <span class="status-pill status-confirmed"><span class="status-dot"></span> Confirmed</span>
+                            {% elif order.status == 'rejected' %}
+                            <span class="status-pill status-rejected"><span class="status-dot"></span> Rejected</span>
+                            {% else %}
+                            <span class="status-pill status-pending"><span class="status-dot"></span> Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex gap-2 justify-content-end align-items-center">
+                                {% if order.status != 'confirmed' %}
+                                <form method="POST" action="{{ url_for('admin.update_order_status', order_id=order.id) }}"
+                                    class="m-0">
+                                    <input type="hidden" name="status" value="confirmed" />
+                                    <button type="submit" class="btn btn-sm btn-light border text-success shadow-sm"
+                                        title="Accept Order" style="width:36px;height:36px;border-radius:10px;">
+                                        <i class="bi bi-check-lg fs-6"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if order.status != 'rejected' %}
+                                <form method="POST" action="{{ url_for('admin.update_order_status', order_id=order.id) }}"
+                                    class="m-0">
+                                    <input type="hidden" name="status" value="rejected" />
+                                    <button type="submit" class="btn btn-sm btn-light border text-danger shadow-sm"
+                                        title="Reject Order" style="width:36px;height:36px;border-radius:10px;">
+                                        <i class="bi bi-x-lg fs-6"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state py-5">
+                                <div
+                                    style="width:80px;height:80px;background:#f3f4f6;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+                                    <i class="bi bi-bag-x text-muted m-0" style="font-size:2.5rem;opacity:0.6;"></i>
+                                </div>
+                                <h4 class="fw-bold text-dark" style="font-family:'Outfit',sans-serif;">No Orders Found
+                                </h4>
+                                <p class="text-muted">You're all caught up. New orders from the website will appear
+                                    here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

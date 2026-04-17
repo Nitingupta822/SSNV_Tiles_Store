@@ -1,0 +1,1 @@
+from tiles_stock_app import create_app\n\napp = create_app()\n
