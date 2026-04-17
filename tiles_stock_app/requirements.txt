@@ -1,4 +1,4 @@
-Flask==3.0.3
+Flask==2.3.2
 Flask-SQLAlchemy==3.1.1
 Werkzeug==3.0.6
 SQLAlchemy==2.0.36
@@ -6,3 +6,5 @@ xhtml2pdf==0.2.11
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
 \ngunicorn==21.2.0\npsycopg2-binary==2.9.9\n
+
+
