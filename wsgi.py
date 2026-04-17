@@ -1,1 +1,3 @@
-from tiles_stock_app import create_app\n\napp = create_app()\n
+from tiles_stock_app import create_app
+
+app = create_app()
