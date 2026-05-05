@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      font-family: Helvetica;
+      font-size: 11pt;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header-table {
+      width: 100%;
+      border-bottom: 2px solid #333;
+      margin-bottom: 20pt;
+    }
+
+    .logo {
+      width: 120pt;
+    }
+
+    .shop-details h1 {
+      margin: 0;
+      font-size: 24pt;
+      color: #000;
+    }
+
+    .shop-details p {
+      margin: 0;
+      font-size: 10pt;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1pt;
+    }
+
+    .invoice-title {
+      text-align: right;
+      vertical-align: top;
+    }
+
+    .invoice-title h2 {
+      margin: 0;
+      font-size: 20pt;
+      color: #333;
+    }
+
+    .info-table {
+      width: 100%;
+      margin-bottom: 20pt;
+    }
+
+    .info-table td {
+      border: none;
+      text-align: left;
+      padding: 2pt 0;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20pt;
+    }
+
+    .items-table th {
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 8pt;
+      font-weight: bold;
+    }
+
+    .items-table td {
+      border: 1px solid #eee;
+      padding: 8pt;
+    }
+
+    .summary-table {
+      width: 250pt;
+      float: right;
+    }
+
+    .summary-table td {
+      border: none;
+      padding: 4pt;
+    }
+
+    .grand-total {
+      font-size: 14pt;
+      font-weight: bold;
+      border-top: 1px solid #333 !important;
+      color: #000;
+    }
+
+    .signature-img {
+      height: 40pt;
+    }
+  </style>
+</head>
+
+<body>
+  <table class="header-table">
+    <tr>
+      <td style="border:none; text-align:left; width:60%;">
+        <div class="shop-details">
+          <img src="{{ logo_path }}" class="logo">
+          <h1>SSNV</h1>
+          <p>Tiles & Sanitary Store</p>
+        </div>
+      </td>
+      <td class="invoice-title" style="border:none;">
+        <h2>INVOICE</h2>
+        <p style="margin:0; font-size:12pt;">#{{ bill.id }}</p>
+        <p style="margin:5pt 0 0 0; color:#666;">Date: {{ bill.date.strftime('%d %b %Y') }}</p>
+      </td>
+    </tr>
+  </table>
+
+  <table class="info-table">
+    <tr>
+      <td style="width:50%;">
+        <p style="margin:0 0 5pt 0; color:#666; font-size:9pt; font-weight:bold;">BILL TO:</p>
+        <p style="margin:0; font-size:12pt; font-weight:bold;">{{ bill.customer_name or 'Walk-in Customer' }}</p>
+        {% if bill.customer_mobile %}
+        <p style="margin:2pt 0; color:#333;">Phone: {{ bill.customer_mobile }}</p>
+        {% endif %}
+      </td>
+      <td style="text-align:right;">
+        <p style="margin:0 0 5pt 0; color:#666; font-size:9pt; font-weight:bold;">BILLED BY:</p>
+        <p style="margin:0;">{{ session.get('user') }}</p>
+      </td>
+    </tr>
+  </table>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width:30pt;">#</th>
+        <th style="text-align:left;">Description</th>
+        <th style="width:60pt;">Size</th>
+        <th style="width:60pt; text-align:right;">Price</th>
+        <th style="width:40pt;">Qty</th>
+        <th style="width:70pt; text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set subtotal = 0 %}
+      {% for item in items %}
+      {% set subtotal = subtotal + item.total %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td style="text-align:left;"><b>{{ item.tile_name }}</b></td>
+        <td>{{ item.size }}</td>
+        <td style="text-align:right;">Rs. {{ "%.2f"|format(item.price) }}</td>
+        <td>{{ item.quantity }}</td>
+        <td style="text-align:right;">Rs. {{ "%.2f"|format(item.total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="width:100%;">
+    <table class="summary-table">
+      <tr>
+        <td style="text-align:right; color:#666;">Subtotal</td>
+        <td style="text-align:right; width:80pt;">Rs. {{ "%.2f"|format(subtotal) }}</td>
+      </tr>
+      <tr>
+        <td style="text-align:right; color:#666;">GST ({{ bill.gst }}%)</td>
+        <td style="text-align:right;">Rs. {{ "%.2f"|format(subtotal * bill.gst / 100) }}</td>
+      </tr>
+      <tr>
+        <td style="text-align:right; color:#666;">Discount</td>
+        <td style="text-align:right; color:red;">-Rs. {{ "%.2f"|format(bill.discount) }}</td>
+      </tr>
+      <tr class="grand-total">
+        <td style="text-align:right;">Grand Total</td>
+        <td style="text-align:right;">Rs. {{ "%.2f"|format(bill.total) }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div style="page-break-inside: avoid; margin-top: 20pt; width: 100%;">
+    <table style="width: 100%; border: none;">
+      <tr>
+        <td style="width: 60%; border: none; vertical-align: bottom; font-size: 8pt; color: #999;">
+          This is a computer-generated invoice.<br>
+          Thank you for your business!
+        </td>
+        <td style="width: 40%; border: none; text-align: center;">
+          <img src="{{ signature_path }}" class="signature-img">
+          <div style="border-top: 1pt solid #333; margin-top: 5pt; padding-top: 2pt; font-weight: bold;">Authorized Signature</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+
+</html>

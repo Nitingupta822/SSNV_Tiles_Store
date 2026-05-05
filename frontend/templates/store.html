@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SSNV Tiles – Store</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <!-- PWA Config -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#7c4dff">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo.png') }}">
+
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
+
+
+    <style>
+        :root {
+            --primary: #7c4dff;
+            --primary-dark: #6236ff;
+            --accent: #00c9a7;
+            --hero-bg: radial-gradient(ellipse at bottom, #2b1b54 0%, #0d0f14 100%);
+        }
+
+        * {
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: #fcfbff;
+            min-height: 100vh;
+        }
+
+        /* ===== NAVBAR ===== */
+        .store-nav {
+            background: rgba(13, 15, 20, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .store-nav .brand {
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .store-nav .brand-icon {
+            background: linear-gradient(135deg, var(--primary), #b47cff);
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #fff;
+        }
+
+        .nav-links .btn-login {
+            background: linear-gradient(135deg, var(--primary), #b47cff);
+            color: #fff !important;
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
+        }
+
+        .nav-links .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(124, 77, 255, 0.5);
+            filter: brightness(1.1);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 576px) {
+            .store-nav {
+                padding: 1rem;
+            }
+
+            .nav-links a {
+                margin-left: 0.75rem;
+                font-size: 0.85rem;
+            }
+        }
+
+
+        /* ===== HERO ===== */
+        .store-hero {
+            background-color: #0d0f14;
+            background-image: radial-gradient(ellipse at bottom, #2b1b54 0%, #0d0f14 100%);
+            padding: 5rem 1rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            display: block;
+        }
+
+        /* Abstract Particles Overlay */
+        .store-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            animation: moveBg 60s linear infinite;
+        }
+
+        @keyframes moveBg {
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 201, 167, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(0, 201, 167, 0.3);
+            border-radius: 50px;
+            padding: 0.4rem 1.25rem;
+            font-size: 0.85rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .store-hero h1 {
+            color: #fff;
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.25rem;
+            position: relative;
+            z-index: 2;
+            letter-spacing: -2px;
+        }
+
+        .store-hero h1 span {
+            background: linear-gradient(90deg, #b47cff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .store-hero p {
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+            font-size: 1.15rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            position: relative;
+            z-index: 2;
+            margin-bottom: 3rem;
+        }
+
+        .hero-stat .val {
+            font-size: 2.2rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+            display: block;
+        }
+
+        .hero-stat .lbl {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-top: 4px;
+            display: block;
+        }
+
+        /* ===== FILTER BAR ===== */
+        .filter-bar {
+            background: #ffffff;
+            padding: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin: -2rem auto 2rem;
+            width: 90%;
+            max-width: 900px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            position: relative;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .filter-bar {
+                width: 95%;
+                margin-top: -1.5rem;
+                margin-bottom: 1.5rem;
+                padding: 0.75rem;
+            }
+        }
+
+        .filter-bar form {
+            display: flex;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1rem;
+        }
+
+        .filter-bar .input-group {
+            max-width: 320px;
+        }
+
+        .filter-bar .form-control,
+        .filter-bar .form-select {
+            border-radius: 12px;
+            border: 2px solid #f3f4f6;
+            background: #f9fafb;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .filter-bar .input-group-text {
+            background: #f9fafb;
+            border: 2px solid #f3f4f6;
+            border-right: none;
+            color: #9ca3af;
+            border-radius: 12px 0 0 12px;
+        }
+
+        .filter-bar .form-control {
+            border-left: none;
+            padding-left: 0;
+        }
+
+        .filter-bar .form-control:focus,
+        .filter-bar .form-select:focus {
+            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.1);
+        }
+
+        .btn-filter {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-filter:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
+        }
+
+        /* ===== STORE TILES ===== */
+        .tiles-section {
+            padding: 1.5rem 0 4rem;
+        }
+
+        .section-heading {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 2rem;
+            color: #0d0f14;
+            margin-bottom: 2rem;
+            letter-spacing: -0.5px;
+            margin-top: 0.5rem;
+        }
+
+        .tile-card {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .tile-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(124, 77, 255, 0.12);
+            border-color: rgba(124, 77, 255, 0.2);
+        }
+
+        .tile-img-wrap {
+            position: relative;
+            height: 220px;
+            background: #f9f8ff;
+            overflow: hidden;
+        }
+
+        .tile-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tile-card:hover .tile-img-wrap img {
+            transform: scale(1.08);
+        }
+
+        .badge-status {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(8px);
+            z-index: 10;
+        }
+
+        .badge-stock {
+            background: rgba(0, 201, 167, 0.9);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 201, 167, 0.3);
+        }
+
+        .badge-low {
+            background: rgba(245, 158, 11, 0.9);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .tile-body {
+            padding: 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tile-brand {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: #0d0f14;
+            margin-bottom: 0.25rem;
+        }
+
+        .tile-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .tile-size {
+            background: #f0edf9;
+            color: var(--primary);
+            padding: 0.25rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .tile-stock {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .tile-price {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+            margin-bottom: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .tile-price small {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        .btn-buy {
+            margin-top: auto;
+            background: linear-gradient(135deg, var(--primary), #b47cff);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.05rem;
+            width: 100%;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(124, 77, 255, 0.2);
+        }
+
+        .btn-buy:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(124, 77, 255, 0.4);
+        }
+
+        /* ===== MODAL ===== */
+        .modal-content {
+            border-radius: 24px;
+            border: none;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-header {
+            background: #f9f8ff;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
+
+        .modal-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #0d0f14;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-preview {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+
+        .modal-preview img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .modal-preview .info h5 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            margin: 0;
+            color: #0d0f14;
+        }
+
+        .modal-preview .info p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            background: #0d0f14;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            padding: 2rem 1rem;
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .fade-up {
+            opacity: 0;
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="store-nav d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <a href="{{ url_for('store.store') }}" class="brand">
+            <div class="brand-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div> SSNV Tiles
+        </a>
+        <div class="nav-links d-flex align-items-center flex-wrap">
+            <a href="{{ url_for('store.store') }}" class="active"><i class="bi bi-house me-1"></i>Store</a>
+            <a href="{{ url_for('store.contact') }}"><i class="bi bi-envelope me-1"></i>Contact</a>
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('auth.login') }}"><i class="bi bi-person-circle me-1"></i>Login</a>
+            <a href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-left me-1"></i>Logout</a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-login ms-2"><i
+                    class="bi bi-person-circle me-2"></i>Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <section class="store-hero">
+        <div class="hero-badge fade-up"><i class="bi bi-stars"></i> Premium Quality Tiles</div>
+        <h1 class="fade-up delay-1">Discover Beautiful <span>Tiles</span><br>for Your Space</h1>
+        <p class="fade-up delay-2">Browse our curated collection. Place your order online and our team will get in touch
+            with you to finalize details.</p>
+        <div class="hero-stats fade-up delay-2 mt-4">
+            <div class="hero-stat"><span class="val">{{ tiles|length }}+</span><span class="lbl">Products</span></div>
+            <div class="hero-stat"><span class="val">100%</span><span class="lbl">Quality</span></div>
+        </div>
+    </section>
+
+    <div class="filter-bar fade-up delay-2">
+        <form method="get" action="{{ url_for('store.store') }}">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search brands..."
+                    value="{{ search }}" />
+            </div>
+            <select name="size" class="form-select" style="max-width:200px;">
+                <option value="">All Dimensions</option>
+                {% for s in all_sizes %}
+                <option value="{{ s }}" {% if size_filter==s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-filter"><i class="bi bi-funnel-fill me-1"></i>Apply</button>
+            {% if search or size_filter %}
+            <a href="{{ url_for('store.store') }}" class="btn btn-link text-muted text-decoration-none">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <section class="pt-0 pb-0" style="margin-bottom: 1rem;">
+        <div class="container">
+            <ul class="nav nav-pills mb-4 justify-content-center flex-column flex-sm-row gap-3" id="storeTabs"
+                role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill fw-bold w-100 store-tab-btn px-4" id="store-tiles-tab"
+                        data-bs-toggle="tab" data-bs-target="#store-tiles-panel" type="button" role="tab"
+                        style="font-size:1.1rem; border:2px solid var(--primary);">Tiles Collection</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill fw-bold w-100 store-tab-btn px-4" id="store-sanitary-tab"
+                        data-bs-toggle="tab" data-bs-target="#store-sanitary-panel" type="button" role="tab"
+                        style="font-size:1.1rem; border:2px solid var(--primary);">Sanitary Collection</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill fw-bold w-100 store-tab-btn px-4" id="store-other-tab"
+                        data-bs-toggle="tab" data-bs-target="#store-other-panel" type="button" role="tab"
+                        style="font-size:1.1rem; border:2px solid var(--primary);">Roofing & Others</button>
+                </li>
+            </ul>
+            <style>
+                .store-tab-btn {
+                    color: var(--primary);
+                    background: transparent;
+                }
+
+                .store-tab-btn.active {
+                    color: #fff !important;
+                    background: var(--primary) !important;
+                }
+            </style>
+        </div>
+    </section>
+
+    <div class="tab-content" id="storeTabsContent">
+        <!-- Tiles Panel -->
+        <div class="tab-pane fade show active" id="store-tiles-panel" role="tabpanel">
+            <section class="pt-0 pb-4">
+                <div class="container">
+                    <h2 class="section-heading text-center fade-up delay-1" style="margin-top: 0; margin-bottom: 1.5rem;">Explore Collection</h2>
+
+                    <div class="d-flex justify-content-center flex-wrap gap-3 mb-4 fade-up delay-1">
+                        <button class="btn btn-outline-primary rounded-pill store-cat-filter active"
+                            data-filter="all">All Tiles</button>
+                        {% for cat in categories %}
+                        <button class="btn btn-outline-primary rounded-pill store-cat-filter" data-filter="{{ cat }}">{{
+                            cat }}</button>
+                        {% endfor %}
+                        <button class="btn btn-outline-primary rounded-pill store-cat-filter"
+                            data-filter="uncategorized">Uncategorized</button>
+                    </div>
+
+                    {% if tiles %}
+                    <div class="row g-4 mt-2">
+                        {% for tile in tiles %}
+                        <div class="col-sm-6 col-lg-4 col-xl-3 fade-up store-tile-item"
+                            data-category="{{ tile.category or 'uncategorized' }}"
+                            style="animation-delay: {{ loop.index0 * 0.05 }}s;">
+                            <div class="tile-card">
+                                <div class="tile-img-wrap">
+                                    {% if tile.quantity < 10 %} <span class="badge-status badge-low">Low Stock</span>
+                                        {% else %}
+                                        <span class="badge-status badge-stock">In Stock</span>
+                                        {% endif %}
+
+                                        {% if tile.image_filename %}
+                                        <img src="{{ url_for('uploaded_file', filename=tile.image_filename) }}"
+                                            alt="{{ tile.brand }}" loading="lazy" />
+                                        {% else %}
+                                        <div
+                                            style="height:100%;display:flex;align-items:center;justify-content:center;background:#f3f0fa;color:var(--primary);font-size:3rem;opacity:0.3;">
+                                            <i class="bi bi-image"></i>
+                                        </div>
+                                        {% endif %}
+                                </div>
+                                <div class="tile-body">
+                                    <div class="tile-brand">{{ tile.brand }}</div>
+                                    {% if tile.category %}
+                                    <div class="mb-2"><span class="badge bg-secondary" style="font-size:0.7rem;">{{
+                                            tile.category }}</span></div>
+                                    {% endif %}
+                                    <div class="tile-meta">
+                                        <span class="tile-size"><i class="bi bi-arrows-fullscreen me-1"></i>{{ tile.size
+                                            }}</span>
+                                        <span class="tile-stock">{{ tile.quantity }} boxes</span>
+                                    </div>
+                                    <div class="tile-price">₹{{ "%.2f"|format(tile.price) }} <small>/ box</small></div>
+
+                                    <button class="btn-buy ripple" data-bs-toggle="modal" data-bs-target="#orderModal"
+                                        data-tile-id="{{ tile.id }}" data-tile-brand="{{ tile.brand }}"
+                                        data-tile-size="{{ tile.size }}" data-tile-price="{{ tile.price }}"
+                                        data-tile-max="{{ tile.quantity }}"
+                                        data-tile-img="{% if tile.image_filename %}{{ url_for('uploaded_file', filename=tile.image_filename) }}{% endif %}">
+                                        Request Order <i class="bi bi-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 fade-up delay-1">
+                        <i class="bi bi-inbox text-muted" style="font-size:4rem;opacity:0.5;"></i>
+                        <h4 class="mt-3 text-dark fw-bold" style="font-family:'Outfit',sans-serif;">No products found
+                        </h4>
+                        <p class="text-muted">Try adjusting your search criteria.</p>
+                    </div>
+                    {% endif %}
+                </div>
+        </div>
+        </section>
+    </div> <!-- End Tiles Panel -->
+
+    <!-- Sanitary Panel -->
+    <div class="tab-pane fade" id="store-sanitary-panel" role="tabpanel">
+        <section class="pt-0 pb-4">
+            <div class="container">
+                <h2 class="section-heading text-center fade-up delay-1" style="margin-top: 0; margin-bottom: 1.5rem;">Sanitary Collection</h2>
+
+                <div class="d-flex justify-content-center flex-wrap gap-3 mb-4 fade-up delay-1">
+                    <button class="btn btn-outline-primary rounded-pill store-sanitary-filter active"
+                        data-filter="all">All Products</button>
+                    {% for cat in sanitary_categories %}
+                    <button class="btn btn-outline-primary rounded-pill store-sanitary-filter"
+                        data-filter="{{ cat }}">{{ cat }}</button>
+                    {% endfor %}
+                </div>
+
+                {% if sanitary_products %}
+                <div class="row g-4 mt-2">
+                    {% for product in sanitary_products %}
+                    <div class="col-sm-6 col-lg-4 col-xl-3 fade-up store-sanitary-item"
+                        data-category="{{ product.category }}" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
+                        <div class="tile-card">
+                            <div class="tile-img-wrap">
+                                {% if product.quantity < 10 %} <span class="badge-status badge-low">Low Stock</span>
+                                    {% else %}
+                                    <span class="badge-status badge-stock">In Stock</span>
+                                    {% endif %}
+
+                                    {% if product.image_filename %}
+                                    <img src="{{ url_for('uploaded_file', filename=product.image_filename) }}"
+                                        alt="{{ product.brand }}" loading="lazy" />
+                                    {% else %}
+                                    <div
+                                        style="height:100%;display:flex;align-items:center;justify-content:center;background:#f3f0fa;color:var(--primary);font-size:3rem;opacity:0.3;">
+                                        <i class="bi bi-droplet"></i>
+                                    </div>
+                                    {% endif %}
+                            </div>
+                            <div class="tile-body">
+                                <div class="tile-brand">{{ product.name }}</div>
+                                <div class="mb-2"><span class="badge bg-secondary" style="font-size:0.7rem;">{{
+                                        product.category }}</span></div>
+                                <div class="tile-meta">
+                                    <span class="tile-size"><i class="bi bi-tag-fill me-1"></i>{{ product.brand or
+                                        'Standard' }}</span>
+                                    <span class="tile-stock">{{ product.quantity }} in stock</span>
+                                </div>
+                                <div class="tile-price">₹{{ "%.2f"|format(product.price) }}</div>
+
+                                <button class="btn-buy ripple" data-bs-toggle="modal" data-bs-target="#orderModal"
+                                    data-tile-id="{{ product.id }}" data-tile-brand="{{ product.name }}"
+                                    data-tile-size="{{ product.brand or '-' }}" data-tile-price="{{ product.price }}"
+                                    data-tile-max="{{ product.quantity }}" data-is-sanitary="1"
+                                    data-tile-img="{% if product.image_filename %}{{ url_for('uploaded_file', filename=product.image_filename) }}{% endif %}">
+                                    Request Order <i class="bi bi-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 fade-up delay-1">
+                    <i class="bi bi-droplet text-muted" style="font-size:4rem;opacity:0.5;"></i>
+                    <h4 class="mt-3 text-dark fw-bold" style="font-family:'Outfit',sans-serif;">No products found</h4>
+                    <p class="text-muted">Try adjusting your search criteria.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div> <!-- End Sanitary Panel -->
+
+    <!-- Other Panel -->
+    <div class="tab-pane fade" id="store-other-panel" role="tabpanel">
+        <section class="pt-0 pb-4">
+            <div class="container">
+                <h2 class="section-heading text-center fade-up delay-1" style="margin-top: 0; margin-bottom: 1.5rem;">Roofing & Others</h2>
+
+                <div class="d-flex justify-content-center flex-wrap gap-3 mb-4 fade-up delay-1">
+                    <button class="btn btn-outline-primary rounded-pill store-other-filter active" data-filter="all">All
+                        Products</button>
+                    {% for cat in other_categories %}
+                    <button class="btn btn-outline-primary rounded-pill store-other-filter" data-filter="{{ cat }}">{{
+                        cat }}</button>
+                    {% endfor %}
+                </div>
+
+                {% if other_products %}
+                <div class="row g-4 mt-2">
+                    {% for product in other_products %}
+                    <div class="col-sm-6 col-lg-4 col-xl-3 fade-up store-other-item"
+                        data-category="{{ product.category }}" style="animation-delay: {{ loop.index0 * 0.05 }}s;">
+                        <div class="tile-card">
+                            <div class="tile-img-wrap">
+                                {% if product.quantity < 10 %} <span class="badge-status badge-low">Low Stock</span>
+                                    {% else %}
+                                    <span class="badge-status badge-stock">In Stock</span>
+                                    {% endif %}
+
+                                    {% if product.image_filename %}
+                                    <img src="{{ url_for('uploaded_file', filename=product.image_filename) }}"
+                                        alt="{{ product.name }}" loading="lazy" />
+                                    {% else %}
+                                    <div
+                                        style="height:100%;display:flex;align-items:center;justify-content:center;background:#f3f0fa;color:var(--primary);font-size:3rem;opacity:0.3;">
+                                        <i class="bi bi-hammer"></i>
+                                    </div>
+                                    {% endif %}
+                            </div>
+                            <div class="tile-body">
+                                <div class="tile-brand">{{ product.name }}</div>
+                                <div class="mb-2"><span class="badge bg-secondary" style="font-size:0.7rem;">{{
+                                        product.category }}</span></div>
+                                <div class="tile-meta">
+                                    <span class="tile-size"><i class="bi bi-tag-fill me-1"></i>{{ product.brand or
+                                        'Standard' }}</span>
+                                    <span class="tile-stock">{{ product.quantity }} in stock</span>
+                                </div>
+                                <div class="tile-price">₹{{ "%.2f"|format(product.price) }}</div>
+
+                                <button class="btn-buy ripple" data-bs-toggle="modal" data-bs-target="#orderModal"
+                                    data-tile-id="{{ product.id }}" data-tile-brand="{{ product.name }}"
+                                    data-tile-size="{{ product.brand or '-' }}" data-tile-price="{{ product.price }}"
+                                    data-tile-max="{{ product.quantity }}" data-is-other="1"
+                                    data-tile-img="{% if product.image_filename %}{{ url_for('uploaded_file', filename=product.image_filename) }}{% endif %}">
+                                    Request Order <i class="bi bi-arrow-right ms-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 fade-up delay-1">
+                    <i class="bi bi-hammer text-muted" style="font-size:4rem;opacity:0.5;"></i>
+                    <h4 class="mt-3 text-dark fw-bold" style="font-family:'Outfit',sans-serif;">No products found</h4>
+                    <p class="text-muted">Try adjusting your search criteria.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    </div> <!-- End Tab Content -->
+
+    <!-- Modal -->
+    <div class="modal fade" id="orderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-bag-plus-fill me-2 text-primary"></i>Place Order Request
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <div class="modal-preview">
+                        <img id="modalImg" src="" alt="Tile" style="display:none;" />
+                        <div id="modalNoImg"
+                            style="width:70px;height:70px;background:#f3f0fa;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1.5rem;">
+                            <i class="bi bi-image"></i>
+                        </div>
+                        <div class="info">
+                            <h5 id="modalBrand">Brand Name</h5>
+                            <p id="modalMeta">Size · Price</p>
+                        </div>
+                    </div>
+
+                    <form id="orderForm" method="POST">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Full Name *</label>
+                                <input type="text" name="customer_name" class="form-control"
+                                    style="background:#f9fafb;border-radius:10px;" required />
+                            </div>
+                            <div class="col-sm-6">
+                                <label style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Mobile *</label>
+                                <input type="tel" name="customer_mobile" class="form-control"
+                                    style="background:#f9fafb;border-radius:10px;" required pattern="[0-9]{10}" />
+                            </div>
+                            <div class="col-sm-6">
+                                <label style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Email</label>
+                                <input type="email" name="customer_email" class="form-control"
+                                    style="background:#f9fafb;border-radius:10px;" />
+                            </div>
+                            <div class="col-12">
+                                <label style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Address
+                                    (Optional)</label>
+                                <textarea name="customer_address" class="form-control" rows="2"
+                                    style="background:#f9fafb;border-radius:10px;"></textarea>
+                            </div>
+
+                            <div class="col-4">
+                                <label style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Qty (Boxes)</label>
+                                <input type="number" id="modalQty" name="quantity" class="form-control fw-bold" min="1"
+                                    value="1" required
+                                    style="background:#fff;border:2px solid var(--primary);border-radius:10px;" />
+                            </div>
+                            <div class="col-8">
+                                <label style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Est. Total</label>
+                                <div id="modalTotal"
+                                    style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:var(--primary);line-height:1.2;">
+                                    ₹0.00</div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn w-100"
+                                    style="background:var(--primary);color:#fff;font-family:'Outfit',sans-serif;font-weight:700;padding:0.8rem;border-radius:12px;font-size:1.1rem;box-shadow:0 6px 16px rgba(124,77,255,0.3);">Submit
+                                    Request <i class="bi bi-arrow-right ms-2"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <i class="bi bi-grid-3x3-gap-fill mb-2 fs-4 d-block" style="color:var(--primary);"></i>
+        <p class="mb-1"><strong style="color:#fff;">SSNV Tiles</strong> – Premium Quality Stock</p>
+        <p class="mb-0">Designed &amp; Developed by <strong>Nitin Gupta</strong></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterBtns = document.querySelectorAll('.store-cat-filter');
+            const tileItems = document.querySelectorAll('.store-tile-item');
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const filter = this.getAttribute('data-filter');
+                    tileItems.forEach(el => {
+                        if (filter === 'all' || el.getAttribute('data-category') === filter) {
+                            el.style.display = '';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            // Sanitary Filtering
+            const sanitaryFilterBtns = document.querySelectorAll('.store-sanitary-filter');
+            const sanitaryItems = document.querySelectorAll('.store-sanitary-item');
+
+            sanitaryFilterBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    sanitaryFilterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const filter = this.getAttribute('data-filter');
+                    sanitaryItems.forEach(el => {
+                        if (filter === 'all' || el.getAttribute('data-category') === filter) {
+                            el.style.display = '';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            // Other Filtering
+            const otherFilterBtns = document.querySelectorAll('.store-other-filter');
+            const otherItems = document.querySelectorAll('.store-other-item');
+
+            otherFilterBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    otherFilterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const filter = this.getAttribute('data-filter');
+                    otherItems.forEach(el => {
+                        if (filter === 'all' || el.getAttribute('data-category') === filter) {
+                            el.style.display = '';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            // Master Tabs Retention
+            const sanTab = document.getElementById('store-sanitary-tab');
+            const tileTab = document.getElementById('store-tiles-tab');
+            const otherTab = document.getElementById('store-other-tab');
+
+            if (sanTab) {
+                sanTab.addEventListener('click', () => localStorage.setItem('storeMainTab', 'sanitary'));
+                tileTab.addEventListener('click', () => localStorage.setItem('storeMainTab', 'tiles'));
+                otherTab.addEventListener('click', () => localStorage.setItem('storeMainTab', 'other'));
+
+                const savedTab = localStorage.getItem('storeMainTab');
+                if (savedTab === 'sanitary') {
+                    new bootstrap.Tab(sanTab).show();
+                } else if (savedTab === 'other') {
+                    new bootstrap.Tab(otherTab).show();
+                } else {
+                    new bootstrap.Tab(tileTab).show();
+                }
+            }
+        });
+
+        const orderModal = document.getElementById('orderModal');
+        orderModal.addEventListener('show.bs.modal', e => {
+            const btn = e.relatedTarget;
+            const p = parseFloat(btn.dataset.tilePrice);
+            const m = parseInt(btn.dataset.tileMax);
+
+            document.getElementById('modalBrand').textContent = btn.dataset.tileBrand;
+            document.getElementById('modalMeta').textContent = `${btn.dataset.tileSize} · ₹${p.toFixed(2)}`;
+
+            if (btn.dataset.isSanitary === "1") {
+                document.getElementById('orderForm').action = `{{ url_for('store.place_sanitary_order', id=0) }}`.replace('0', btn.dataset.tileId);
+            } else if (btn.dataset.isOther === "1") {
+                document.getElementById('orderForm').action = `{{ url_for('store.place_other_order', id=0) }}`.replace('0', btn.dataset.tileId);
+            } else {
+                document.getElementById('orderForm').action = `{{ url_for('store.place_online_order', tile_id=0) }}`.replace('0', btn.dataset.tileId);
+            }
+
+            const imgEl = document.getElementById('modalImg');
+            const noImgEl = document.getElementById('modalNoImg');
+            if (btn.dataset.tileImg) {
+                imgEl.src = btn.dataset.tileImg;
+                imgEl.style.display = 'block'; noImgEl.style.display = 'none';
+            } else {
+                imgEl.style.display = 'none'; noImgEl.style.display = 'flex';
+            }
+
+            const q = document.getElementById('modalQty');
+            q.max = m; q.value = 1;
+
+            const renderTotal = () => {
+                let v = parseInt(q.value) || 1;
+                v = Math.max(1, Math.min(v, m));
+                q.value = v;
+                document.getElementById('modalTotal').textContent = `₹${(p * v).toFixed(2)}`;
+            };
+
+            renderTotal();
+            q.addEventListener('input', renderTotal);
+        });
+    </script>
+    <script>
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("{{ url_for('static', filename='js/sw.js') }}")
+                    .catch(err => console.log('SW registration failed', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

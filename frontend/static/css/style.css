@@ -1,0 +1,164 @@
+/* ================= GLOBAL ================= */
+:root {
+  --primary-color: #7c4dff;
+  --secondary-color: #b47cff;
+  --bg-color: #f0edf9;
+  --text-color: #1a0533;
+  --sidebar-bg: #0d0f14;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --radius: 14px;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ================= RIPPLE EFFECT ================= */
+.ripple {
+  position: relative;
+  overflow: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+.ripple:after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform .5s, opacity 1s;
+}
+
+.ripple:active:after {
+  transform: scale(0, 0);
+  opacity: .3;
+  transition: 0s;
+}
+
+/* ================= TOUCH TARGETS ================= */
+.btn, .sidebar-link, .bottom-nav a, .nav-link, .dropdown-item {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1rem;
+}
+
+.form-control, .form-select {
+  min-height: 48px;
+}
+
+/* ================= CARDS ================= */
+.modern-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s;
+}
+
+/* ================= MOBILE BOTTOM NAV ================= */
+.bottom-nav {
+  display: none; /* hidden on larger screens */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: #fff;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  z-index: 1000;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.04);
+}
+
+.bottom-nav a {
+  color: #8e8fa1;
+  font-size: 1.5rem;
+  text-align: center;
+  flex: 1;
+  transition: color 0.2s, transform 0.2s;
+  text-decoration: none;
+  height: 100%;
+}
+
+.bottom-nav a.active {
+  color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.bottom-nav a i {
+  display: block;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 991.98px) {
+  .bottom-nav {
+    display: flex;
+  }
+  
+  .main-content {
+    margin-bottom: 64px; /* Space for bottom nav */
+  }
+
+  .site-footer {
+    margin-bottom: 70px;
+  }
+}
+
+/* ================= FORMS ================= */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ================= SEARCH BAR ================= */
+.search-container {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  padding-left: 2.5rem !important;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8e8fa1;
+}
+
+/* ================= GRID FIXES ================= */
+.mobile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 576px) {
+  .mobile-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}

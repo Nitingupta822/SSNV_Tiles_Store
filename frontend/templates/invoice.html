@@ -1,0 +1,235 @@
+{% extends 'base.html' %} {% block title %}Invoice #{{ bill.id }}{% endblock %}
+{% block page_title %}Invoice{% endblock %} {% block extra_css %}
+<style>
+  @media print {
+
+    .sidebar,
+    .top-navbar,
+    .no-print {
+      display: none !important;
+    }
+
+    .main-content {
+      margin-left: 0 !important;
+    }
+
+    .content-area {
+      padding: 0 !important;
+    }
+
+    .modern-card {
+      box-shadow: none !important;
+      border: 1px solid #ddd !important;
+    }
+  }
+
+  .invoice-header {
+    background: #fff;
+    color: #0d0f14;
+    padding: 1.5rem 0;
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 2rem;
+  }
+
+  .brand-logo {
+    max-height: 80px;
+    margin-bottom: 0.5rem;
+  }
+
+  .shop-name {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    margin: 0;
+    line-height: 1.2;
+    color: #1a0a33;
+  }
+
+  .shop-cat {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .invoice-meta {
+    text-align: right;
+  }
+
+  .invoice-id {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--primary);
+  }
+
+  /* Signature Section */
+  .signature-section {
+    margin-top: 4rem;
+    text-align: right;
+  }
+
+  .signature-img {
+    max-height: 60px;
+    margin-bottom: 0.5rem;
+  }
+
+  .signature-label {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0d0f14;
+    border-top: 1px solid #ddd;
+    display: inline-block;
+    padding-top: 0.5rem;
+    min-width: 200px;
+  }
+
+  .invoice-badge {
+    background: #f0f0f0;
+    color: #4b5563;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="modern-card mb-4">
+  <!-- Invoice Header -->
+  <div class="invoice-header px-4">
+    <div class="row align-items-center">
+      <div class="col-md-6 text-center text-md-start">
+        <img src="{{ url_for('static', filename='images/ssnv_logo.png') }}" alt="SSNV Logo" class="brand-logo" onerror="this.style.display='none'">
+        <h1 class="shop-name">SSNV</h1>
+        <p class="shop-cat">Tiles & Sanitary Store</p>
+      </div>
+      <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+        <div class="invoice-meta">
+          <div class="invoice-id mb-1">INVOICE</div>
+          <div class="invoice-badge">
+            <i class="bi bi-hash"></i> {{ bill.id }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Invoice Info -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <h6 class="text-muted text-uppercase small mb-2">Bill To</h6>
+        <h5 class="mb-1">{{ bill.customer_name or 'Walk-in Customer' }}</h5>
+        {% if bill.customer_mobile %}
+        <p class="mb-0">
+          <i class="bi bi-telephone me-1"></i>{{ bill.customer_mobile }}
+        </p>
+        {% endif %}
+      </div>
+      <div class="col-md-6 text-md-end">
+        <h6 class="text-muted text-uppercase small mb-2">Invoice Details</h6>
+        <p class="mb-1">
+          <strong>Date:</strong> {{ bill.date.strftime('%d %B %Y') if bill.date
+          else '—' }}
+        </p>
+        <p class="mb-0">
+          <strong>Billed By:</strong> {{ session.get('user') }}
+        </p>
+      </div>
+    </div>
+
+    <hr />
+
+    <!-- Items Table -->
+    <h6 class="text-muted text-uppercase small mb-3">Items</h6>
+    <div class="table-responsive mb-4">
+      {% set subtotal = namespace(value=0) %}
+      <table class="table modern-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item</th>
+            <th>Size</th>
+            <th class="text-end">Price</th>
+            <th class="text-center">Qty</th>
+            <th class="text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %} {% set subtotal.value = subtotal.value +
+          item.total %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td><strong>{{ item.tile_name }}</strong></td>
+            <td>{{ item.size }}</td>
+            <td class="text-end">₹{{ "%.2f"|format(item.price) }}</td>
+            <td class="text-center">{{ item.quantity }}</td>
+            <td class="text-end fw-semibold">
+              ₹{{ "%.2f"|format(item.total) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Summary -->
+    <div class="row justify-content-end">
+      <div class="col-md-5">
+        <div class="bg-light rounded p-3">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal</span>
+            <span>₹{{ "%.2f"|format(subtotal.value) }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>GST ({{ bill.gst }}%)</span>
+            <span>₹{{ "%.2f"|format(subtotal.value * bill.gst / 100) }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Discount</span>
+            <span class="text-danger">-₹{{ "%.2f"|format(bill.discount) }}</span>
+          </div>
+          <hr />
+          <div class="d-flex justify-content-between">
+            <strong class="fs-5">Grand Total</strong>
+            <strong class="fs-5 text-success">₹{{ "%.2f"|format(bill.total) }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Signature -->
+    <div class="signature-section px-4 pb-4">
+      <div class="text-end">
+        <img src="{{ url_for('static', filename='images/signature.png') }}" alt="Authorized Signature" class="signature-img" onerror="this.style.display='none'">
+        <br>
+        <span class="signature-label">Authorized Signature</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex flex-column flex-sm-row gap-2 justify-content-center no-print">
+  <a href="{{ url_for('billing.invoice_pdf', bill_id=bill.id) }}" class="btn btn-outline-danger btn-modern">
+    <i class="bi bi-file-pdf me-1"></i>Download PDF
+  </a>
+  {% if bill.customer_mobile %}
+  <a href="https://wa.me/91{{ bill.customer_mobile }}?text={{ whatsapp_message|urlencode }}" target="_blank"
+    class="btn btn-success btn-modern">
+    <i class="bi bi-whatsapp me-1"></i>Send via WhatsApp
+  </a>
+  {% endif %}
+  <button onclick="window.print()" class="btn btn-outline-secondary btn-modern">
+    <i class="bi bi-printer me-1"></i>Print
+  </button>
+  <a href="{{ url_for('billing.create_bill') }}" class="btn btn-gradient-success btn-modern">
+    <i class="bi bi-plus-lg me-1"></i>New Bill
+  </a>
+  <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary btn-modern">
+    <i class="bi bi-arrow-left me-1"></i>Dashboard
+  </a>
+</div>
+{% endblock %}

@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}Tiles Stock Management{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <!-- Custom CSS -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
+
+  <!-- Google Fonts: Outfit + Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <!-- PWA Config -->
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#6c3fc5">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo.png') }}">
+
+  <style>
+    :root {
+      --sidebar-width: 268px;
+      --sidebar-bg: #0d0f14;
+      --sidebar-border: rgba(255, 255, 255, 0.06);
+      --sidebar-hover: rgba(108, 63, 197, 0.18);
+      --accent: #7c4dff;
+      --accent2: #b47cff;
+      --primary-gradient: linear-gradient(135deg, #7c4dff 0%, #b47cff 100%);
+      --success-gradient: linear-gradient(135deg, #00c9a7 0%, #48d89b 100%);
+      --danger-gradient: linear-gradient(135deg, #ff5275 0%, #ff8a65 100%);
+      --warning-gradient: linear-gradient(135deg, #ffa726 0%, #ffcc02 100%);
+      --info-gradient: linear-gradient(135deg, #29b6f6 0%, #4fc3f7 100%);
+      --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      --card-shadow-hover: 0 12px 40px rgba(108, 63, 197, 0.18);
+      --radius: 14px;
+    }
+
+    * {
+      font-family: 'Inter', sans-serif;
+      box-sizing: border-box;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background: #f0edf9;
+      min-height: 100vh;
+    }
+
+    /* ========== SIDEBAR ========== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--sidebar-bg);
+      padding: 0;
+      z-index: 1000;
+      transition: transform 0.3s cubic-bezier(.4, 0, .2, 1);
+      overflow-y: auto;
+      overflow-x: hidden;
+      border-right: 1px solid var(--sidebar-border);
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .sidebar-brand {
+      padding: 1.5rem 1.4rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--sidebar-border);
+      background: linear-gradient(135deg, rgba(124, 77, 255, 0.12) 0%, rgba(180, 124, 255, 0.06) 100%);
+    }
+
+    .sidebar-brand .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary-gradient);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(124, 77, 255, 0.45);
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand h4 {
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: -0.3px;
+    }
+
+    .sidebar-brand small {
+      color: rgba(255, 255, 255, 0.42);
+      font-size: 0.72rem;
+      display: block;
+      margin-top: 1px;
+    }
+
+    .sidebar-nav {
+      padding: 1rem 0 2rem;
+    }
+
+    .sidebar-section {
+      padding: 0.85rem 1.4rem 0.35rem;
+      color: rgba(255, 255, 255, 0.28);
+      font-size: 0.67rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      padding: 0.72rem 1.4rem;
+      color: rgba(255, 255, 255, 0.58);
+      text-decoration: none;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+      margin: 1px 0;
+      position: relative;
+    }
+
+    .sidebar-link:hover {
+      background: var(--sidebar-hover);
+      color: #fff;
+      border-left-color: var(--accent);
+    }
+
+    .sidebar-link.active {
+      background: linear-gradient(90deg, rgba(124, 77, 255, 0.25) 0%, rgba(124, 77, 255, 0.05) 100%);
+      color: #fff;
+      border-left-color: var(--accent);
+    }
+
+    .sidebar-link.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .sidebar-link i {
+      width: 22px;
+      margin-right: 11px;
+      font-size: 1.05rem;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .sidebar-link:hover i {
+      transform: translateX(2px);
+    }
+
+    .sidebar-link .badge {
+      margin-left: auto;
+      font-size: 0.62rem;
+      padding: 0.3em 0.55em;
+    }
+
+    /* ========== MAIN CONTENT ========== */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+      transition: margin-left 0.3s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    /* ========== TOP NAVBAR ========== */
+    .top-navbar {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 0.8rem 1.75rem;
+      border-bottom: 1px solid rgba(124, 77, 255, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .top-navbar::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary-gradient);
+      opacity: 0.3;
+    }
+
+    .top-navbar .page-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #0d0f14;
+      margin: 0;
+    }
+
+    /* User Avatar / Dropdown */
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f5f0ff;
+      border: 1.5px solid #e8d9ff;
+      padding: 0.4rem 1rem 0.4rem 0.5rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #1a0533;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: none;
+    }
+
+    .user-pill:hover {
+      background: #ede5ff;
+      color: #1a0533;
+      box-shadow: 0 2px 12px rgba(124, 77, 255, 0.15);
+    }
+
+    .user-pill .avatar {
+      width: 30px;
+      height: 30px;
+      background: var(--primary-gradient);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 0.85rem;
+    }
+
+    .user-dropdown .dropdown-menu {
+      border: 1px solid #e8d9ff;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(124, 77, 255, 0.15);
+      padding: 0.4rem;
+      min-width: 180px;
+    }
+
+    .user-dropdown .dropdown-item {
+      border-radius: 8px;
+      padding: 0.55rem 0.9rem;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+
+    .user-dropdown .dropdown-item:hover {
+      background: #f5f0ff;
+      color: var(--accent);
+    }
+
+    /* ========== CONTENT AREA ========== */
+    .content-area {
+      padding: 1.75rem;
+    }
+
+    /* ========== STAT CARDS ========== */
+    .stat-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      transition: transform 0.25s, box-shadow 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primary-gradient);
+      border-radius: 14px 14px 0 0;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .stat-card .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #fff;
+      position: relative;
+    }
+
+    .stat-card .stat-icon::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .stat-card .stat-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0d0f14;
+      line-height: 1;
+    }
+
+    .stat-card .stat-label {
+      color: #8e8fa1;
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.25rem;
+    }
+
+    /* ========== MODERN CARDS ========== */
+    .modern-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+    }
+
+    .modern-card .card-header {
+      background: #fff;
+      border-bottom: 1px solid #f0edf6;
+      padding: 1.1rem 1.4rem;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      color: #1a0533;
+    }
+
+    .modern-card .card-body {
+      padding: 1.4rem;
+    }
+
+    /* ========== TABLES ========== */
+    .modern-table {
+      margin-bottom: 0;
+    }
+
+    .modern-table thead th {
+      background: #f8f5ff;
+      border: none;
+      padding: 0.9rem 1rem;
+      font-weight: 700;
+      font-size: 0.78rem;
+      color: #8e8fa1;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      white-space: nowrap;
+    }
+
+    .modern-table tbody td {
+      padding: 0.95rem 1rem;
+      vertical-align: middle;
+      border-color: #f5f0ff;
+      font-size: 0.9rem;
+    }
+
+    .modern-table tbody tr {
+      transition: background 0.15s;
+    }
+
+    .modern-table tbody tr:hover {
+      background: #fdf9ff;
+    }
+
+    /* ========== BADGES ========== */
+    .badge-stock-high {
+      background: var(--success-gradient);
+      color: #fff;
+      padding: 0.35rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .badge-stock-low {
+      background: var(--warning-gradient);
+      color: #2d1200;
+      padding: 0.35rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .badge-stock-out {
+      background: var(--danger-gradient);
+      color: #fff;
+      padding: 0.35rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    /* ========== BUTTONS ========== */
+    .btn-modern {
+      padding: 0.6rem 1.3rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+      letter-spacing: 0.1px;
+    }
+
+    .btn-modern:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-gradient-primary {
+      background: var(--primary-gradient);
+      border: none;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(124, 77, 255, 0.3);
+    }
+
+    .btn-gradient-primary:hover {
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(124, 77, 255, 0.45);
+      filter: brightness(1.06);
+    }
+
+    .btn-gradient-success {
+      background: var(--success-gradient);
+      border: none;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(0, 201, 167, 0.3);
+    }
+
+    .btn-gradient-success:hover {
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0, 201, 167, 0.45);
+      filter: brightness(1.06);
+    }
+
+    /* ========== FORM STYLES ========== */
+    .form-control,
+    .form-select {
+      border-radius: 10px;
+      border: 1.5px solid #e5dff5;
+      padding: 0.65rem 1rem;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.14);
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: #2d1a55;
+      margin-bottom: 0.4rem;
+      font-size: 0.88rem;
+    }
+
+    /* ========== TOASTS ========== */
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1100;
+    }
+
+    .toast {
+      border-radius: 12px;
+      border: none;
+      background: #fff;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      overflow: hidden;
+      min-width: 280px;
+    }
+
+    .toast-header {
+      background: var(--primary-gradient);
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1rem;
+    }
+
+    .toast-header .btn-close {
+      filter: brightness(0) invert(1);
+    }
+
+    .toast-body {
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    /* ========== EMPTY STATE ========== */
+    .empty-state {
+      text-align: center;
+      padding: 3.5rem 1rem;
+      color: #8e8fa1;
+    }
+
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.2;
+      display: block;
+    }
+
+    /* ========== LOADING OVERLAY ========== */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13, 15, 20, 0.55);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 52px;
+      height: 52px;
+      background: #fff;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ========== SIDEBAR TOGGLE ========== */
+    .sidebar-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: #1a0533;
+      padding: 0;
+    }
+
+    /* ========== SCROLL TO TOP ========== */
+    #scrollTop {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      width: 44px;
+      height: 44px;
+      background: var(--primary-gradient);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      z-index: 990;
+      box-shadow: 0 4px 16px rgba(124, 77, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #scrollTop:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(124, 77, 255, 0.5);
+    }
+
+    #scrollTop.show {
+      display: flex;
+    }
+
+    /* ========== MOBILE ========== */
+    @media (max-width: 991.98px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .sidebar-toggle {
+        display: block;
+      }
+
+      .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 999;
+        display: none;
+        backdrop-filter: blur(2px);
+      }
+
+      .sidebar-overlay.show {
+        display: block;
+      }
+
+      .content-area {
+        padding: 1rem;
+      }
+
+      .btn-mobile-full {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+    }
+
+    /* ========== FOOTER ========== */
+    .site-footer {
+      background: var(--sidebar-bg);
+      color: rgba(255, 255, 255, 0.4);
+      text-align: center;
+      padding: 1.25rem 1rem;
+      font-size: 0.82rem;
+      border-top: 1px solid var(--sidebar-border);
+      margin-top: 2rem;
+    }
+
+    .site-footer strong {
+      color: var(--accent2);
+    }
+
+    /* ========== MODAL ========== */
+    .modal-content {
+      border-radius: 18px;
+      border: none;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ========== ANIMATIONS ========== */
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .content-area>* {
+      animation: fadeSlideIn 0.3s ease both;
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+  {% if session.get('user_id') %}
+  <!-- Sidebar Overlay (Mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+      <div>
+        <h4>TileStock</h4>
+        <small>Stock Management</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main Menu</div>
+
+      <a href="{{ url_for('admin.dashboard') }}"
+        class="sidebar-link ripple {{ 'active' if request.endpoint == 'admin.dashboard' else '' }}">
+        <i class="bi bi-house-door"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{{ url_for('billing.create_bill') }}" class="sidebar-link ripple {{ 'active' if request.endpoint == 'billing.create_bill' else '' }}">
+        <i class="bi bi-receipt"></i>
+        <span>New Bill</span>
+      </a>
+
+      <a href="{{ url_for('billing.sales_history') }}"
+        class="sidebar-link ripple {{ 'active' if request.path == url_for('billing.sales_history') else '' }}">
+        <i class="bi bi-clock-history"></i>
+        <span>Sales History</span>
+      </a>
+
+      <a href="{{ url_for('admin.sales_report') }}"
+        class="sidebar-link ripple {{ 'active' if request.endpoint == 'admin.sales_report' else '' }}">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>Sales Report</span>
+      </a>
+
+      <a href="{{ url_for('store.store') }}" class="sidebar-link ripple {{ 'active' if request.endpoint == 'store.store' else '' }}">
+        <i class="bi bi-shop"></i>
+        <span>Online Store</span>
+        <span class="badge bg-success ms-auto">LIVE</span>
+      </a>
+
+      {% if session.get('role') == 'admin' %}
+      <div class="sidebar-section mt-2">Admin</div>
+
+      <a href="{{ url_for('admin.add_tile') }}" class="sidebar-link {{ 'active' if request.endpoint == 'admin.add_tile' else '' }}">
+        <i class="bi bi-plus-square"></i>
+        <span>Add Tile</span>
+      </a>
+
+      <a href="{{ url_for('auth.user_management') }}"
+        class="sidebar-link {{ 'active' if request.path == url_for('auth.user_management') else '' }}">
+        <i class="bi bi-people"></i>
+        <span>User Management</span>
+      </a>
+
+      <a href="{{ url_for('admin.admin_orders') }}"
+        class="sidebar-link {{ 'active' if request.endpoint == 'admin.admin_orders' else '' }}">
+        <i class="bi bi-bag-check"></i>
+        <span>Online Orders</span>
+      </a>
+      {% endif %}
+
+      <div class="sidebar-section mt-2">Account</div>
+
+      <a href="{{ url_for('auth.logout') }}" class="sidebar-link">
+        <i class="bi bi-box-arrow-left"></i>
+        <span>Logout</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Navbar -->
+    <header class="top-navbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle" id="sidebarToggle">
+          <i class="bi bi-list"></i>
+        </button>
+        <h1 class="page-title mb-0">
+          {% block page_title %}Dashboard{% endblock %}
+        </h1>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <div class="dropdown user-dropdown">
+          <button class="user-pill border-0" type="button" data-bs-toggle="dropdown">
+            <div class="avatar"><i class="bi bi-person-fill"></i></div>
+            {{ session.get('user') }}
+            {% if session.get('role') == 'admin' %}
+            <span class="badge ms-1" style="background:var(--danger-gradient);font-size:0.65rem;">Admin</span>
+            {% else %}
+            <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">Staff</span>
+            {% endif %}
+            <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;opacity:0.6;"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Toast Container -->
+      <div class="toast-container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header">
+            <i class="bi bi-bell-fill me-2"></i>
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+          </div>
+          <div class="toast-body">{{ message }}</div>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+  {% endif %}
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+      <div class="spinner-border text-primary" role="status" style="width:1.75rem;height:1.75rem;border-width:3px;">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirm Delete
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-2">
+          <p id="deleteMessage" class="text-muted">Are you sure you want to delete this item?</p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary btn-modern" data-bs-dismiss="modal">Cancel</button>
+          <a href="#" id="deleteConfirmBtn" class="btn btn-modern"
+            style="background:var(--danger-gradient);color:#fff;">
+            <i class="bi bi-trash me-1"></i>Delete
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll to Top -->
+  <button id="scrollTop" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <i class="bi bi-arrow-up"></i>
+  </button>
+<nav class="bottom-nav">
+  <a href="{{ url_for('admin.dashboard') }}" class="ripple {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" aria-label="Dashboard">
+    <i class="bi bi-house-door"></i>
+  </a>
+  <a href="{{ url_for('store.store') }}" class="ripple {% if request.endpoint == 'store.store' %}active{% endif %}" aria-label="Store">
+    <i class="bi bi-shop"></i>
+  </a>
+  <a href="{{ url_for('admin.admin_orders') }}" class="ripple {% if request.endpoint == 'admin.admin_orders' %}active{% endif %}" aria-label="Orders">
+    <i class="bi bi-bag-check"></i>
+  </a>
+  <a href="{{ url_for('auth.user_management') }}" class="ripple {% if request.endpoint == 'auth.user_management' %}active{% endif %}" aria-label="Profile">
+    <i class="bi bi-person"></i>
+  </a>
+  <a href="{{ url_for('auth.logout') }}" class="ripple" aria-label="Logout">
+    <i class="bi bi-box-arrow-left"></i>
+  </a>
+</nav>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Sidebar Toggle
+    const sidebar = document.getElementById("sidebar");
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener("click", () => {
+        sidebar.classList.toggle("show");
+        sidebarOverlay.classList.toggle("show");
+      });
+    }
+
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener("click", () => {
+        sidebar.classList.remove("show");
+        sidebarOverlay.classList.remove("show");
+      });
+    }
+
+    // Auto-hide toasts
+    document.querySelectorAll(".toast").forEach((toast) => {
+      setTimeout(() => { toast.classList.remove("show"); }, 5000);
+    });
+
+    // Delete confirmation
+    function confirmDelete(url, itemName) {
+      document.getElementById("deleteMessage").textContent = `Are you sure you want to delete "${itemName}"? This action cannot be undone.`;
+      document.getElementById("deleteConfirmBtn").href = url;
+      new bootstrap.Modal(document.getElementById("deleteModal")).show();
+    }
+
+    // Loading overlay on form submit
+    document.querySelectorAll("form").forEach((form) => {
+      form.addEventListener("submit", () => {
+        document.getElementById("loadingOverlay").classList.add("show");
+      });
+    });
+
+    // Scroll to top button
+    const scrollTopBtn = document.getElementById("scrollTop");
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 300) scrollTopBtn.classList.add("show");
+      else scrollTopBtn.classList.remove("show");
+    });
+
+    // Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='js/sw.js') }}")
+          .catch(err => console.log('SW registration failed', err));
+      });
+    }
+  </script>
+
+  <footer class="site-footer">
+    <i class="bi bi-grid-3x3-gap-fill me-1"></i>
+    <strong>TileStock</strong> &nbsp;· &nbsp;Designed &amp; Developed by <strong>Nitin Gupta</strong>
+  </footer>
+
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>

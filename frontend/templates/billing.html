@@ -1,0 +1,551 @@
+{% extends 'base.html' %}
+{% block title %}Create Bill{% endblock %}
+{% block page_title %}Create New Bill{% endblock %}
+{% block extra_css %}
+<style>
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .anim-block {
+    opacity: 0;
+    animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .delay-1 {
+    animation-delay: 0.1s;
+  }
+
+  .delay-2 {
+    animation-delay: 0.2s;
+  }
+
+  .delay-3 {
+    animation-delay: 0.3s;
+  }
+
+  /* ===== FORM ELEMENTS ===== */
+  .modern-input-group {
+    position: relative;
+  }
+
+  .modern-input-group .input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #b47cff;
+    font-size: 1.1rem;
+    z-index: 5;
+  }
+
+  .modern-input-group .form-control {
+    padding-left: 2.8rem;
+    height: 3.25rem;
+    border-radius: 12px;
+    background: #fcfbff;
+  }
+
+  .modern-input-group .form-control:focus {
+    background: #fff;
+  }
+
+  /* ===== TABLE HIGHLIGHTS ===== */
+  .table-row-disabled td {
+    opacity: 0.5;
+    background: #f8f9fa;
+  }
+
+  .table-row-active {
+    background: #f5f0ff !important;
+  }
+
+  /* Custom spinner for quantity */
+  .qty-spinner {
+    display: flex;
+    align-items: center;
+    background: #f0edf9;
+    border-radius: 8px;
+    border: 1px solid #e8d9ff;
+    overflow: hidden;
+    width: 110px;
+    transition: all 0.2s;
+  }
+
+  .qty-spinner:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.15);
+  }
+
+  .qty-spinner .btn-spin {
+    background: none;
+    border: none;
+    padding: 0.35rem 0.6rem;
+    color: var(--primary);
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .qty-spinner .btn-spin:hover:not(:disabled) {
+    background: rgba(124, 77, 255, 0.1);
+  }
+
+  .qty-spinner .btn-spin:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+  }
+
+  .qty-spinner input {
+    width: 100%;
+    text-align: center;
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0;
+    font-weight: 600;
+    color: #0d0f14;
+    -moz-appearance: textfield;
+  }
+
+  .qty-spinner input::-webkit-outer-spin-button,
+  .qty-spinner input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* ===== GRAND TOTAL CARD ===== */
+  .total-card-wrapper {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, #1a0a33 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    color: #fff;
+    box-shadow: 0 12px 32px rgba(13, 15, 20, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .total-card-wrapper::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: var(--primary);
+    filter: blur(80px);
+    opacity: 0.3;
+    border-radius: 50%;
+  }
+
+  .total-value-display {
+    font-family: 'Outfit', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(90deg, #fff 0%, #b47cff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-top: 0.5rem;
+    transition: all 0.3s;
+  }
+
+  .total-value-display.pulse {
+    animation: textPulse 0.4s ease;
+  }
+
+  @keyframes textPulse {
+    0% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+
+    50% {
+      transform: scale(1.05);
+      filter: brightness(1.5);
+    }
+
+    100% {
+      transform: scale(1);
+      filter: brightness(1);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="billingForm">
+  <!-- Customer Info Card -->
+  <div class="modern-card mb-4 anim-block delay-1">
+    <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom-0 pb-0 pt-4">
+      <h5 class="mb-0">
+        <i class="bi bi-person-circle me-2 text-primary"></i>Customer Details
+      </h5>
+    </div>
+    <div class="card-body pt-3">
+      <div class="row g-4">
+        <div class="col-md-6">
+          <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+          <div class="modern-input-group">
+            <i class="bi bi-person input-icon"></i>
+            <input type="text" name="customer_name" class="form-control" placeholder="Enter full name" required />
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Mobile Number</label>
+          <div class="modern-input-group">
+            <i class="bi bi-telephone input-icon"></i>
+            <input type="tel" name="customer_mobile" class="form-control" placeholder="e.g. 9876543210"
+              pattern="[0-9]{10}" maxlength="10" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tiles Selection Card -->
+  <div class="modern-card mb-4 anim-block delay-2">
+    <div class="card-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+      <h5 class="mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Select Items</h5>
+      <span class="badge" style="background:#f0edf9;color:var(--primary);">{{ (tiles|length) + (sanitary_products|length) + (other_products|length) }} Available Items</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+        <table class="table modern-table mb-0 align-middle">
+          <thead style="position: sticky; top: 0; z-index: 10;">
+            <tr>
+              <th>Product</th>
+              <th>Dimensions</th>
+              <th>Unit Price</th>
+              <th>Stock Status</th>
+              <th style="width: 140px">Quantity</th>
+              <th style="width: 120px" class="text-end">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#f8f9fa;"><td colspan="6" class="text-muted fw-bold py-2"><i class="bi bi-grid-3x3 me-2"></i>Tiles Inventory</td></tr>
+            {% if tiles %}
+            {% for tile in tiles %}
+            <tr class="{{ 'table-row-disabled' if tile.quantity == 0 else '' }}" id="row-{{ tile.id }}">
+              <td>
+                <div class="d-flex align-items-center gap-3">
+                  {% if tile.image_filename %}
+                  <img src="{{ url_for('uploaded_file', filename=tile.image_filename) }}" alt="{{ tile.brand }}"
+                    style="width:40px;height:40px;border-radius:8px;object-fit:cover;" />
+                  {% else %}
+                  <div
+                    style="width:40px;height:40px;border-radius:8px;background:#f0edf9;display:flex;align-items:center;justify-content:center;color:var(--primary);">
+                    <i class="bi bi-image"></i></div>
+                  {% endif %}
+                  <strong style="font-family:'Outfit',sans-serif;font-size:1.05rem;" class="text-dark">{{ tile.brand
+                    }}</strong>
+                </div>
+              </td>
+              <td class="text-muted"><i class="bi bi-arrows-fullscreen me-1"></i>{{ tile.size }}</td>
+              <td class="price fw-bold" style="color:var(--primary);">₹{{ "%.2f"|format(tile.price) }}</td>
+              <td>
+                {% if tile.quantity == 0 %}
+                <span class="badge badge-stock-out">Out of Stock</span>
+                {% elif tile.quantity < 10 %} <span class="badge badge-stock-low">Low: {{ tile.quantity }}</span>
+                  {% else %}
+                  <span class="badge badge-stock-high">{{ tile.quantity }} Available</span>
+                  {% endif %}
+              </td>
+              <td>
+                <div class="qty-spinner">
+                  <button type="button" class="btn-spin" onclick="updateQty('{{ tile.id }}', -1)" {% if tile.quantity==0
+                    %}disabled{% endif %}><i class="bi bi-dash"></i></button>
+                  <input type="number" id="qty_{{ tile.id }}" name="qty_{{ tile.id }}" class="qty-input" min="0"
+                    max="{{ tile.quantity }}" value="0" data-price="{{ tile.price }}" data-row="{{ tile.id }}" inputmode="numeric" {% if
+                    tile.quantity==0 %}disabled{% endif %}>
+                  <button type="button" class="btn-spin" onclick="updateQty('{{ tile.id }}', 1)" {% if tile.quantity==0
+                    %}disabled{% endif %}><i class="bi bi-plus"></i></button>
+                </div>
+              </td>
+              <td class="row-total fw-bold text-success text-end fs-6">₹0.00</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr><td colspan="6"><div class="text-muted text-center py-2">No tiles available.</div></td></tr>
+            {% endif %}
+
+            <tr style="background:#f8f9fa;"><td colspan="6" class="text-muted fw-bold py-2"><i class="bi bi-droplet-fill me-2"></i>Sanitary Products</td></tr>
+            {% if sanitary_products %}
+            {% for product in sanitary_products %}
+            <tr class="{{ 'table-row-disabled' if product.quantity == 0 else '' }}" id="row-sanitary-{{ product.id }}">
+              <td>
+                <div class="d-flex align-items-center gap-3">
+                  {% if product.image_filename %}
+                  <img src="{{ url_for('uploaded_file', filename=product.image_filename) }}" alt="{{ product.name }}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;" />
+                  {% else %}
+                  <div style="width:40px;height:40px;border-radius:8px;background:#f0edf9;display:flex;align-items:center;justify-content:center;color:var(--primary);"><i class="bi bi-droplet"></i></div>
+                  {% endif %}
+                  <div>
+                    <strong style="font-family:'Outfit',sans-serif;font-size:1.05rem;" class="text-dark">{{ product.name }}</strong>
+                    <div class="text-muted small">{{ product.category }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="text-muted"><i class="bi bi-tag-fill me-1"></i>{{ product.brand or '-' }}</td>
+              <td class="price fw-bold" style="color:var(--primary);">₹{{ "%.2f"|format(product.price) }}</td>
+              <td>
+                {% if product.quantity == 0 %}
+                <span class="badge badge-stock-out">Out of Stock</span>
+                {% elif product.quantity < 10 %} <span class="badge badge-stock-low">Low: {{ product.quantity }}</span>
+                {% else %}
+                <span class="badge badge-stock-high">{{ product.quantity }} Available</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="qty-spinner">
+                  <button type="button" class="btn-spin" onclick="updateQtySanitary('{{ product.id }}', -1)" {% if product.quantity==0 %}disabled{% endif %}><i class="bi bi-dash"></i></button>
+                  <input type="number" id="qty_sanitary_{{ product.id }}" name="qty_sanitary_{{ product.id }}" class="qty-input" min="0" max="{{ product.quantity }}" value="0" data-price="{{ product.price }}" data-row="sanitary-{{ product.id }}" inputmode="numeric" {% if product.quantity==0 %}disabled{% endif %}>
+                  <button type="button" class="btn-spin" onclick="updateQtySanitary('{{ product.id }}', 1)" {% if product.quantity==0 %}disabled{% endif %}><i class="bi bi-plus"></i></button>
+                </div>
+              </td>
+              <td class="row-total fw-bold text-success text-end fs-6">₹0.00</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr><td colspan="6"><div class="text-muted text-center py-2">No sanitary products available.</div></td></tr>
+            {% endif %}
+
+            <tr style="background:#f8f9fa;"><td colspan="6" class="text-muted fw-bold py-2"><i class="bi bi-hammer me-2"></i>Other Products</td></tr>
+            {% if other_products %}
+            {% for product in other_products %}
+            <tr class="{{ 'table-row-disabled' if product.quantity == 0 else '' }}" id="row-other-{{ product.id }}">
+              <td>
+                <div class="d-flex align-items-center gap-3">
+                  {% if product.image_filename %}
+                  <img src="{{ url_for('uploaded_file', filename=product.image_filename) }}" alt="{{ product.name }}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;" />
+                  {% else %}
+                  <div style="width:40px;height:40px;border-radius:8px;background:#f0edf9;display:flex;align-items:center;justify-content:center;color:var(--primary);"><i class="bi bi-box-seam"></i></div>
+                  {% endif %}
+                  <div>
+                    <strong style="font-family:'Outfit',sans-serif;font-size:1.05rem;" class="text-dark">{{ product.name }}</strong>
+                    <div class="text-muted small">{{ product.category }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="text-muted"><i class="bi bi-info-circle me-1"></i>{{ product.specifications or '-' }}</td>
+              <td class="price fw-bold" style="color:var(--primary);">₹{{ "%.2f"|format(product.price) }}</td>
+              <td>
+                {% if product.quantity == 0 %}
+                <span class="badge badge-stock-out">Out of Stock</span>
+                {% elif product.quantity < 10 %} <span class="badge badge-stock-low">Low: {{ product.quantity }}</span>
+                {% else %}
+                <span class="badge badge-stock-high">{{ product.quantity }} Available</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="qty-spinner">
+                  <button type="button" class="btn-spin" onclick="updateQtyOther('{{ product.id }}', -1)" {% if product.quantity==0 %}disabled{% endif %}><i class="bi bi-dash"></i></button>
+                  <input type="number" id="qty_other_{{ product.id }}" name="qty_other_{{ product.id }}" class="qty-input" min="0" max="{{ product.quantity }}" value="0" data-price="{{ product.price }}" data-row="other-{{ product.id }}" inputmode="numeric" {% if product.quantity==0 %}disabled{% endif %}>
+                  <button type="button" class="btn-spin" onclick="updateQtyOther('{{ product.id }}', 1)" {% if product.quantity==0 %}disabled{% endif %}><i class="bi bi-plus"></i></button>
+                </div>
+              </td>
+              <td class="row-total fw-bold text-success text-end fs-6">₹0.00</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr><td colspan="6"><div class="text-muted text-center py-2">No other products available.</div></td></tr>
+            {% endif %}
+
+            {% if not tiles and not sanitary_products and not other_products %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <i class="bi bi-inbox text-muted"></i>
+                  <h5 class="text-dark">No inventory available</h5>
+                  <p>Please add products to the database before creating a bill.</p>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Card -->
+  <div class="row anim-block delay-3">
+    <div class="col-lg-7 mb-4 mb-lg-0">
+      <div class="modern-card h-100">
+        <div class="card-header bg-white border-bottom-0 pb-0 pt-4">
+          <h5 class="mb-0"><i class="bi bi-sliders me-2 text-primary"></i>Bill Adjustments</h5>
+        </div>
+        <div class="card-body pt-3">
+          <div class="row g-4">
+            <div class="col-sm-6">
+              <label class="form-label" for="gst">GST Tax (%)</label>
+              <div class="modern-input-group">
+                <i class="bi bi-percent input-icon"></i>
+                <input type="number" id="gst" name="gst" class="form-control fw-bold" value="18" min="0" max="100" inputmode="numeric" />
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label" for="discount">Discount (₹)</label>
+              <div class="modern-input-group">
+                <i class="bi bi-tag input-icon"></i>
+                <input type="number" id="discount" name="discount" class="form-control fw-bold text-success" value="0"
+                  min="0" inputmode="numeric" />
+              </div>
+            </div>
+          </div>
+          <p class="text-muted small mt-4"><i class="bi bi-info-circle me-1"></i>Tax is calculated on the subtotal
+            before the discount is applied.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="total-card-wrapper h-100 d-flex flex-column justify-content-between">
+        <div>
+          <p class="text-uppercase mb-1"
+            style="color:rgba(255,255,255,0.6);letter-spacing:1px;font-size:0.85rem;font-weight:700;">Final Amount</p>
+          <div class="total-value-display" id="liveTotal">₹0.00</div>
+
+          <div class="d-flex justify-content-between mt-3 pt-3 border-top"
+            style="border-color:rgba(255,255,255,0.1)!important;">
+            <span style="color:rgba(255,255,255,0.7);font-size:0.9rem;">Subtotal</span>
+            <span id="subTotalDisplay" class="fw-bold fs-6">₹0.00</span>
+          </div>
+          <div class="d-flex justify-content-between mt-2">
+            <span style="color:rgba(255,255,255,0.7);font-size:0.9rem;">Tax Amount</span>
+            <span id="taxDisplay" class="fw-bold fs-6 text-warning">+ ₹0.00</span>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column flex-sm-row gap-3 mt-4 pt-2">
+          <a href="{{ url_for('admin.dashboard') }}" class="btn btn-light" style="flex:1;border-radius:12px;font-weight:700;">
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-gradient-primary ripple"
+            style="flex:2;border-radius:12px;font-weight:700;font-size:1.05rem;">
+            Generate Bill <i class="bi bi-arrow-right ms-2"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let lastTotal = "";
+
+  function updateQty(id, change) {
+    const input = document.getElementById(`qty_${id}`);
+    if (input.disabled) return;
+
+    let currentVal = parseInt(input.value) || 0;
+    let max = parseInt(input.getAttribute('max'));
+
+    let newVal = currentVal + change;
+    if (newVal < 0) newVal = 0;
+    if (newVal > max) newVal = max;
+
+    input.value = newVal;
+    calculateTotal();
+  }
+
+  function updateQtySanitary(id, change) {
+    const input = document.getElementById(`qty_sanitary_${id}`);
+    if (input.disabled) return;
+
+    let currentVal = parseInt(input.value) || 0;
+    let max = parseInt(input.getAttribute('max'));
+
+    let newVal = currentVal + change;
+    if (newVal < 0) newVal = 0;
+    if (newVal > max) newVal = max;
+
+    input.value = newVal;
+    calculateTotal();
+  }
+
+  function updateQtyOther(id, change) {
+    const input = document.getElementById(`qty_other_${id}`);
+    if (input.disabled) return;
+
+    let currentVal = parseInt(input.value) || 0;
+    let max = parseInt(input.getAttribute('max'));
+
+    let newVal = currentVal + change;
+    if (newVal < 0) newVal = 0;
+    if (newVal > max) newVal = max;
+
+    input.value = newVal;
+    calculateTotal();
+  }
+
+  function calculateTotal() {
+    let subtotal = 0;
+
+    document.querySelectorAll(".qty-input").forEach((input) => {
+      const qty = parseInt(input.value) || 0;
+      const price = parseFloat(input.dataset.price) || 0;
+      const rowId = input.dataset.row;
+      const rowTotal = qty * price;
+
+      const tr = document.getElementById(`row-${rowId}`);
+
+      // Update row total text
+      const rowTotalCell = tr.querySelector(".row-total");
+      rowTotalCell.textContent = "₹" + rowTotal.toFixed(2);
+
+      // Highlight active rows
+      if (qty > 0) {
+        tr.classList.add('table-row-active');
+      } else {
+        tr.classList.remove('table-row-active');
+      }
+
+      subtotal += rowTotal;
+    });
+
+    const gst = parseFloat(document.getElementById("gst").value) || 0;
+    const discount = parseFloat(document.getElementById("discount").value) || 0;
+
+    const gstAmount = (subtotal * gst) / 100;
+    const grandTotal = subtotal + gstAmount - discount;
+    const finalDisplayStr = "₹" + Math.max(0, grandTotal).toFixed(2);
+
+    // Update breakdowns
+    document.getElementById("subTotalDisplay").textContent = "₹" + subtotal.toFixed(2);
+    document.getElementById("taxDisplay").textContent = "+ ₹" + gstAmount.toFixed(2);
+
+    // Update with animation if changed
+    const totalDisplay = document.getElementById("liveTotal");
+    if (finalDisplayStr !== lastTotal) {
+      totalDisplay.textContent = finalDisplayStr;
+
+      // Trigger CSS animation
+      totalDisplay.classList.remove("pulse");
+      void totalDisplay.offsetWidth; // trigger reflow
+      totalDisplay.classList.add("pulse");
+
+      lastTotal = finalDisplayStr;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Attach listeners to native inputs
+    document.querySelectorAll(".qty-input, #gst, #discount").forEach((el) => {
+      el.addEventListener("input", calculateTotal);
+      el.addEventListener("change", calculateTotal);
+    });
+  });
+</script>
+{% endblock %}

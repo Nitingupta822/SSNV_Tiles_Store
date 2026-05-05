@@ -1,0 +1,173 @@
+{% extends "base.html" %} {% block title %}{{ 'Edit Product' if product else 'Add Product' }}{% endblock %} 
+{% block page_title %}{{ 'Edit Product' if product else 'Add Product' }}{% endblock %} 
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="modern-card">
+      <div class="card-header {{ 'bg-warning bg-opacity-10' if product else '' }}">
+        <h5 class="mb-0">
+          {% if product %}
+          <i class="bi bi-pencil-fill text-warning me-2"></i>Editing: {{ product.name }} 
+          {% else %}
+          <i class="bi bi-plus-circle-fill text-success me-2"></i>Add New Product
+          {% endif %}
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <form method="POST" id="otherForm" enctype="multipart/form-data">
+          
+          <div class="mb-3">
+            <label class="form-label">Product Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" placeholder="e.g., Roofing Sheet, Paint Brush"
+              value="{{ product.name if product else '' }}" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Category <span class="text-danger">*</span></label>
+            <select name="category" class="form-select" required>
+              <option value="">-- Select Category --</option>
+              {% for cat in categories %}
+              <option value="{{ cat }}" {% if product and product.category == cat %}selected{% endif %}>{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Brand <span class="text-muted">(Optional)</span></label>
+                <input type="text" name="brand" class="form-control" placeholder="e.g., TATA, Asian Paints"
+                  value="{{ product.brand if product else '' }}" />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Specifications / Size <span class="text-muted">(Optional)</span></label>
+                <input type="text" name="specifications" class="form-control" placeholder="e.g., 0.5mm Gauge, 10ft"
+                  value="{{ product.specifications if product else '' }}" />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Buy Price (₹) <span class="text-muted">(Opt)</span></label>
+                <input type="number" name="buy_price" class="form-control" step="0.01" min="0" placeholder="Cost price"
+                  value="{{ product.buy_price if product else '' }}" inputmode="numeric" />
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Sell Price (₹) <span class="text-danger">*</span></label>
+                <input type="number" name="price" class="form-control" step="0.01" min="0" placeholder="Selling price"
+                  value="{{ product.price if product else '' }}" required inputmode="numeric" />
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Qty in Stock <span class="text-danger">*</span></label>
+                <input type="number" name="quantity" class="form-control" min="0" placeholder="Stock"
+                  value="{{ product.quantity if product else '' }}" required inputmode="numeric" />
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Description <span class="text-muted">(Optional)</span></label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Additional details...">{{ product.description if product else '' }}</textarea>
+          </div>
+
+          <!-- ====== Product Image Upload ====== -->
+          <div class="mb-4">
+            <label class="form-label">
+              <i class="bi bi-image me-1 text-primary"></i>Product Image
+              <span class="text-muted small">(optional · max 5 MB)</span>
+            </label>
+
+            {% if product and product.image_filename %}
+            <div id="currentImageWrapper" class="mb-2 text-center p-2 border rounded" style="background:#f8f9fa;">
+              <p class="text-muted small mb-1">Current Image</p>
+              <img id="currentImg" src="{{ url_for('uploaded_file', filename=product.image_filename) }}"
+                alt="Current product image"
+                style="max-height:160px; max-width:100%; border-radius:8px; object-fit:cover;" />
+              <div class="mt-2">
+                <label class="form-check-label text-danger small">
+                  <input type="checkbox" name="remove_image" value="1" id="removeImageChk"
+                    class="form-check-input me-1" />
+                  Remove current image
+                </label>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <label for="product_image" class="btn btn-outline-primary btn-sm mb-0 ripple">
+                <i class="bi bi-upload me-1"></i>
+                {{ 'Replace Image' if product and product.image_filename else 'Choose Image' }}
+              </label>
+              <input type="file" name="product_image" id="product_image" accept="image/*" class="d-none"
+                onchange="previewProductImage(event)" />
+              <span id="fileNameLabel" class="text-muted small">No file chosen</span>
+            </div>
+
+            <div id="newImagePreview" class="mt-3 text-center p-2 border rounded d-none" style="background:#f8f9fa;">
+              <p class="text-muted small mb-1">New Image Preview</p>
+              <img id="previewImg" src="#" alt="Preview"
+                style="max-height:160px; max-width:100%; border-radius:8px; object-fit:cover;" />
+            </div>
+          </div>
+
+          <div class="d-flex flex-column flex-sm-row gap-2">
+            <button type="submit"
+              class="btn {{ 'btn-warning' if product else 'btn-gradient-success' }} btn-modern flex-grow-1 ripple">
+              <i class="bi bi-{{ 'check-lg' if product else 'plus-lg' }} me-1"></i>
+              {{ 'Update Product' if product else 'Save Product' }}
+            </button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-modern ripple">
+              <i class="bi bi-arrow-left me-1"></i>Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function previewProductImage(event) {
+    const file = event.target.files[0];
+    const label = document.getElementById('fileNameLabel');
+    const previewBox = document.getElementById('newImagePreview');
+    const previewImg = document.getElementById('previewImg');
+
+    if (file) {
+      label.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        previewImg.src = e.target.result;
+        previewBox.classList.remove('d-none');
+      };
+      reader.readAsDataURL(file);
+
+      const removeChk = document.getElementById('removeImageChk');
+      if (removeChk) removeChk.checked = false;
+    } else {
+      label.textContent = 'No file chosen';
+      previewBox.classList.add('d-none');
+    }
+  }
+
+  const removeChk = document.getElementById('removeImageChk');
+  if (removeChk) {
+    removeChk.addEventListener('change', function () {
+      if (this.checked) {
+        document.getElementById('newImagePreview').classList.add('d-none');
+        document.getElementById('product_image').value = '';
+        document.getElementById('fileNameLabel').textContent = 'No file chosen';
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %} {% block title %}{{ 'Edit Tile' if tile else 'Add
+Tile' }}{% endblock %} {% block page_title %}{{ 'Edit Tile' if tile else 'Add
+New Tile' }}{% endblock %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="modern-card">
+      <div class="card-header {{ 'bg-warning bg-opacity-10' if tile else '' }}">
+        <h5 class="mb-0">
+          {% if tile %}
+          <i class="bi bi-pencil-fill text-warning me-2"></i>Editing: {{
+          tile.brand }} {% else %}
+          <i class="bi bi-plus-circle-fill text-success me-2"></i>Add New Tile
+          {% endif %}
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <form method="POST" id="tileForm" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label">Tile Brand <span class="text-danger">*</span></label>
+            <input type="text" name="brand" class="form-control" placeholder="e.g., Kajaria, Somany"
+              value="{{ tile.brand if tile else '' }}" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Tile Category <span class="text-muted">(Optional)</span></label>
+            <select name="category" class="form-select">
+              <option value="">-- Select Category --</option>
+              {% for cat in categories %}
+              <option value="{{ cat }}" {% if tile and tile.category == cat %}selected{% endif %}>{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Tile Size <span class="text-danger">*</span></label>
+            <input type="text" name="size" class="form-control" placeholder="e.g., 2x2, 600x600 mm"
+              value="{{ tile.size if tile else '' }}" required />
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">
+                  <i class="bi bi-lock-fill text-danger"></i> Buy Price (₹)
+                  <span class="badge bg-danger ms-1">Admin Only</span>
+                </label>
+                <input type="number" name="buy_price" class="form-control" step="0.01" min="0" placeholder="Cost price"
+                  value="{{ tile.buy_price if tile and tile.buy_price else '' }}" inputmode="numeric" />
+                <div class="form-text">Confidential - not visible to staff</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Selling Price (₹) <span class="text-danger">*</span></label>
+                <input type="number" name="price" class="form-control" step="0.01" min="0" placeholder="Selling price"
+                  value="{{ tile.price if tile else '' }}" required inputmode="numeric" />
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Quantity in Stock <span class="text-danger">*</span></label>
+            <input type="number" name="quantity" class="form-control" min="0" placeholder="Available stock"
+              value="{{ tile.quantity if tile else '' }}" required inputmode="numeric" />
+          </div>
+
+          <!-- ====== Tile Image Upload ====== -->
+          <div class="mb-4">
+            <label class="form-label">
+              <i class="bi bi-image me-1 text-primary"></i>Tile Image
+              <span class="text-muted small">(optional · PNG/JPG/GIF/WebP · max 5 MB)</span>
+            </label>
+
+            {% if tile and tile.image_filename %}
+            <!-- Current image preview when editing -->
+            <div id="currentImageWrapper" class="mb-2 text-center p-2 border rounded" style="background:#f8f9fa;">
+              <p class="text-muted small mb-1">Current Image</p>
+              <img id="currentImg" src="{{ url_for('uploaded_file', filename=tile.image_filename) }}"
+                alt="Current tile image"
+                style="max-height:160px; max-width:100%; border-radius:8px; object-fit:cover;" />
+              <div class="mt-2">
+                <label class="form-check-label text-danger small">
+                  <input type="checkbox" name="remove_image" value="1" id="removeImageChk"
+                    class="form-check-input me-1" />
+                  Remove current image
+                </label>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- File picker + instant preview -->
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+              <label for="tile_image" class="btn btn-outline-primary btn-sm mb-0 ripple">
+                <i class="bi bi-upload me-1"></i>
+                {{ 'Replace Image' if tile and tile.image_filename else 'Choose Image' }}
+              </label>
+              <input type="file" name="tile_image" id="tile_image" accept="image/*" class="d-none"
+                onchange="previewTileImage(event)" />
+              <span id="fileNameLabel" class="text-muted small">No file chosen</span>
+            </div>
+
+            <!-- New image preview box -->
+            <div id="newImagePreview" class="mt-3 text-center p-2 border rounded d-none" style="background:#f8f9fa;">
+              <p class="text-muted small mb-1">New Image Preview</p>
+              <img id="previewImg" src="#" alt="Preview"
+                style="max-height:160px; max-width:100%; border-radius:8px; object-fit:cover;" />
+            </div>
+          </div>
+          <!-- ====== End Image Upload ====== -->
+
+          <div class="d-flex flex-column flex-sm-row gap-2">
+            <button type="submit"
+              class="btn {{ 'btn-warning' if tile else 'btn-gradient-success' }} btn-modern flex-grow-1 ripple">
+              <i class="bi bi-{{ 'check-lg' if tile else 'plus-lg' }} me-1"></i>
+              {{ 'Update Tile' if tile else 'Save Tile' }}
+            </button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary btn-modern ripple">
+              <i class="bi bi-arrow-left me-1"></i>Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function previewTileImage(event) {
+    const file = event.target.files[0];
+    const label = document.getElementById('fileNameLabel');
+    const previewBox = document.getElementById('newImagePreview');
+    const previewImg = document.getElementById('previewImg');
+
+    if (file) {
+      label.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        previewImg.src = e.target.result;
+        previewBox.classList.remove('d-none');
+      };
+      reader.readAsDataURL(file);
+
+      // Uncheck "remove image" if user picks a new file
+      const removeChk = document.getElementById('removeImageChk');
+      if (removeChk) removeChk.checked = false;
+    } else {
+      label.textContent = 'No file chosen';
+      previewBox.classList.add('d-none');
+    }
+  }
+
+  // When "Remove image" is checked, hide the new-image preview
+  const removeChk = document.getElementById('removeImageChk');
+  if (removeChk) {
+    removeChk.addEventListener('change', function () {
+      if (this.checked) {
+        document.getElementById('newImagePreview').classList.add('d-none');
+        document.getElementById('tile_image').value = '';
+        document.getElementById('fileNameLabel').textContent = 'No file chosen';
+      }
+    });
+  }
+</script>
+{% endblock %}
